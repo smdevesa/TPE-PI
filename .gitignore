@@ -56,10 +56,9 @@ Mkfile.old
 dkms.conf
 
 # Dataset
-./dataset/*
-./dataset
+dataset/
 
 # Mac things
-./.DS_Store
+.DS_Store
 
 # End of https://www.toptal.com/developers/gitignore/api/c
