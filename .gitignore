@@ -56,7 +56,7 @@ Mkfile.old
 dkms.conf
 
 # Dataset
-dataset/
+*.csv
 
 # Mac things
 .DS_Store
