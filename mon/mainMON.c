@@ -7,7 +7,6 @@
 /* Se piden los nombres de los archivos .csv como entrada */
 int main(int argc, char ** argv)
 {
-    printf("%d",argc);
     if(argc != 3)
     {
         fprintf(stderr, "La cantidad de archivos enviada es incorrecta.");
