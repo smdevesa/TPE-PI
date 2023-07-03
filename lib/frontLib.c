@@ -43,11 +43,9 @@ char ** getField(char * line,int fields)
     checkMem((void *) ans,"ERROR: Cannot allocate memory");
 
     ans[0] = copyStr(strtok(line, DELIM));  
-    printf("%s\n",ans[0]);
     for(int i=1; i < fields; i++)
     {
         ans[i] = copyStr(strtok(NULL, DELIM));
-        printf("%s\n",ans[i]);
     }
 
     return ans;
