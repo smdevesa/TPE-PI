@@ -3,7 +3,13 @@
 
 #include <stdio.h>
 
-#define BLOCK 10
-enum {SEMICOLON = 0, NEWLINE, END}; 
+/*
+** @param line Linea con los campos sin separar.
+** @param fields Cantidad de campos que tendra cada linea del archivo
+**
+** @returns Vector de strings con cada campo separado. En la posicion 0
+**          estaria el primero que encuentre y asi sucesivamente.
+*/
+char ** getField(char * line, int fields);
 
 #endif

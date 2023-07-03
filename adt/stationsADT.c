@@ -74,7 +74,7 @@ static char * copyStr(char * s)
     {
         if(i % COPYBLOCK == 0)
         {
-            ans = realloc(ans, COPYBLOCK * sizeof(char));
+            ans = realloc(ans, (COPYBLOCK+i) * sizeof(char));
             if(checkMem((void *)ans, "ERROR: Cannot allocate memory."))
             {
                 return NULL;
@@ -95,7 +95,7 @@ static char * copyStr(char * s)
 static SList addStationRec(SList list, size_t id, char * name, int * flag)
 {
     int c;
-    if(list == NULL || (c = strcmp(name, list->station.name)) < 0)
+    if(list == NULL || (c = strcmp(name, list->station.name)) < 0 || c == 0 && (list->station.id != id))
     {
         SList newNode = malloc(sizeof(struct SNode));
         if(checkMem((void *)newNode, "ERROR: Cannot allocate memory."))

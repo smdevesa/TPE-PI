@@ -1,55 +1,54 @@
 #include "frontLib.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-void checkMem(void * dir)
+#define DELIM ";"
+#define MAXBUFFER 256
+#define BLOCK 50
+
+static void checkMem(void * ptr, const char * message)
 {
-    if(dir == NULL)
+    if(ptr == NULL)
     {
-        fprintf(stderr, "Error al asignar memoria");
+        fprintf(stderr, "%s", message);
         exit(1);
     }
 }
 
-char * readField(FILE * file, int * flag)
+static char * copyStr(char * s)
 {
-    int condition = 1, aux = *flag;
-    int size = 0, len = 0;
     char * ans = NULL;
-    while(condition)
-    {
-        int c = fgetc(file);
+    int i;
 
-        if(c == ';')
+    for(i=0; s[i] != 0; i++)
+    {
+        if(i % BLOCK == 0)
         {
-            *flag = SEMICOLON;
+            ans = realloc(ans, (BLOCK+i) * sizeof(char));
+            checkMem((void *)ans, "ERROR: Cannot allocate memory.");
         }
-        else if(c == '\n')
-        {
-            *flag = NEWLINE;
-        }
-        else if(c == EOF)
-        {
-            *flag = END;
-        }
-        else
-        {
-            if(size == len)
-            {
-                ans = realloc(ans, sizeof(char) * (size + BLOCK));
-                checkMem((void *)ans);
-                size += BLOCK;
-            }
-            ans[len++] = c;
-        }
-        if(aux != *flag)
-        {
-            condition = 0;
-        }
+        ans[i] = s[i];
     }
-    ans = realloc(ans, sizeof(char) * (len+1));
-    checkMem((void *)ans);
-    ans[len] = 0;
+
+    ans = realloc(ans, (i+1) * sizeof(char));
+    checkMem((void *)ans, "ERROR: Cannot allocate memory.");
+    ans[i] = 0;
     return ans;
 }
 
+char ** getField(char * line,int fields)
+{
+    char ** ans = malloc(fields * sizeof(char *));
+    checkMem((void *) ans,"ERROR: Cannot allocate memory");
+
+    ans[0] = copyStr(strtok(line, DELIM));  
+    printf("%s\n",ans[0]);
+    for(int i=1; i < fields; i++)
+    {
+        ans[i] = copyStr(strtok(NULL, DELIM));
+        printf("%s\n",ans[i]);
+    }
+
+    return ans;
+}
