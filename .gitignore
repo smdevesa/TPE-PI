@@ -61,4 +61,7 @@ dkms.conf
 # Mac things
 .DS_Store
 
+# Ignore Directory
+ignore/
+
 # End of https://www.toptal.com/developers/gitignore/api/c

@@ -1,7 +1,7 @@
 #ifndef _STATIONSADT_H_
 #define _STATIONSADT_H_
 
-#include <ctype.h>
+#include <stddef.h>
 
 typedef struct stationsCDT * stationsADT;
 
@@ -9,11 +9,8 @@ typedef struct stationsCDT * stationsADT;
 /*
 ** @returns Un nuevo ADT de control de estaciones.
 **          En caso de error retorna NULL.
-** 
-** @param hasMultipleTypes Flag para usar diferentes tipos de bicicletas
-**                         en el sistema. Utilice 1 para utilizar distintos tipos, caso contrario 0.
  */
-stationsADT newStationsADT(int hasMultipleTypes);
+stationsADT newStationsADT(void);
 
 /*
 ** Agrega una nueva estacion (no repetida) al sistema.
@@ -26,5 +23,26 @@ stationsADT newStationsADT(int hasMultipleTypes);
 ** @param name Nombre de la estacion a agregar.
  */
 int addStation(stationsADT st, size_t id, char * name);
+
+
+/*
+** Agrega un nuevo recorrido al sistema.
+**
+** @returns 1 si pudo agregar un nuevo recorrido, 0 si no 
+**          existe la estacion de inicio, -1 ante un error
+**          de memoria o de tipo de dato recibido.
+**
+**@param st Sistema de estaciones sobre el que se quiere agregar.
+**@param startId ID de la estacion donde inicio del recorrido.
+**@param endId ID de la estacion donde finalizo del recorrido.
+**@param isMember Flag de si el usuario es miembro (1) o no (0).
+**@param startDate Fecha de inicio y hora de inicio del recorrido.
+*/
+int addRide(stationsADT st, size_t startId, size_t endId, int isMember, char * startDate);
+
+/*
+** Libera el ADT que recibe como parametro.
+*/
+void freeStations(stationsADT st);
 
 #endif
