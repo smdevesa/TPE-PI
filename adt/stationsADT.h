@@ -32,11 +32,11 @@ int addStation(stationsADT st, size_t id, char * name);
 **          existe la estacion de inicio, -1 ante un error
 **          de memoria o de tipo de dato recibido.
 **
-**@param st Sistema de estaciones sobre el que se quiere agregar.
-**@param startId ID de la estacion donde inicio del recorrido.
-**@param endId ID de la estacion donde finalizo del recorrido.
-**@param isMember Flag de si el usuario es miembro (1) o no (0).
-**@param startDate Fecha de inicio y hora de inicio del recorrido.
+** @param st Sistema de estaciones sobre el que se quiere agregar.
+** @param startId ID de la estacion donde inicio del recorrido.
+** @param endId ID de la estacion donde finalizo del recorrido.
+** @param isMember Flag de si el usuario es miembro (1) o no (0).
+** @param startDate Fecha de inicio y hora de inicio del recorrido.
 */
 int addRide(stationsADT st, size_t startId, size_t endId, int isMember, char * startDate);
 

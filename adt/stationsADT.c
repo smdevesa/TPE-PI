@@ -1,6 +1,7 @@
 #include "stationsADT.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 
 #define COPYBLOCK 10
@@ -13,27 +14,34 @@ typedef struct ride
     int isMember; /* Flag de si el usuario de la bicicleta era o no miembro */
 } TRide;
 
+typedef struct RNode
+{
+    TRide ride;
+    struct RNode * tail;
+} RNode;
+
+typedef struct RNode * RList;
+
 typedef struct station
 {
     size_t id; /* ID de la estacion */
     char * name; /* Nombre de la estacion */
-    TRide * rides; /* Vector de rides que salieron desde la estacion */
+    RList rides; /* Vector de rides que salieron desde la estacion */
     size_t dim; /* Cantidad de rides que salieron desde la estacion */
-    size_t size; /* Espacio reservado en el vector de rides */
 } TStation;
 
-typedef struct node
+typedef struct SNode
 {
     TStation station;
-    struct node * tail;
-} TNode;
+    struct SNode * tail;
+} SNode;
 
-typedef struct node * TList;
+typedef struct SNode * SList;
 
 typedef struct stationsCDT
 {
-    TList list; /* Lista de estaciones */
-    TList it; /* Iterador */
+    SList list; /* Lista de estaciones */
+    SList it; /* Iterador */
     size_t qty; /* Cantidad de estaciones */
 } stationsCDT;
 
@@ -84,11 +92,12 @@ static char * copyStr(char * s)
     return ans;
 }
 
-static TList addStationRec(TList list, size_t id, char * name, int * flag)
+static SList addStationRec(SList list, size_t id, char * name, int * flag)
 {
-    if(list == NULL || list->station.id > id)
+    int c;
+    if(list == NULL || (c = strcmp(name, list->station.name)) < 0)
     {
-        TList newNode = malloc(sizeof(struct node));
+        SList newNode = malloc(sizeof(struct SNode));
         if(checkMem((void *)newNode, "ERROR: Cannot allocate memory."))
         {
             *flag = -1;
@@ -96,7 +105,6 @@ static TList addStationRec(TList list, size_t id, char * name, int * flag)
         }
         newNode->station.id = id;
         newNode->station.rides = NULL;
-        newNode->station.size = 0;
         newNode->station.dim = 0;
         newNode->station.name = copyStr(name);
         if(newNode->station.name == NULL)
@@ -107,7 +115,7 @@ static TList addStationRec(TList list, size_t id, char * name, int * flag)
         newNode->tail = list;
         return newNode;
     }
-    if(list->station.id == id)
+    if(c == 0)
     {
         return list;
     }
@@ -127,35 +135,45 @@ int addStation(stationsADT st, size_t id, char * name)
     return flag;
 }
 
-static void addRideRec(TList list, size_t startId, size_t endId, int isMember, unsigned short month, int *flag)
+static RList addRideList(RList list, size_t endId, int isMember, unsigned short month, int *flag)
 {
-    if(list == NULL || list->station.id > startId)
+    if(list == NULL || list->ride.endId >= endId)
     {
+        RList newNode = malloc(sizeof(struct RNode));
+        if(checkMem((void *)newNode, "ERROR: Cannot allocate memory."))
+        {
+            *flag = -1;
+            return list;
+        }
+        newNode->ride.endId = endId;
+        newNode->ride.isMember = isMember;
+        newNode->ride.startMonth = month;
+        *flag = 1;
+        newNode->tail = list;
+        return newNode;
+    }
+    list->tail = addRideList(list->tail, endId, isMember, month, flag);
+    return list;
+}
+
+static void addRideRec(SList list, size_t startId, size_t endId, int isMember, unsigned short month, int *flag)
+{
+    if(list == NULL)
+    {
+        *flag = 0;
         return;
     }
     if(list->station.id == startId)
     {
-        if(list->station.dim == list->station.size)
+        list->station.rides = addRideList(list->station.rides, endId, isMember, month, flag);
+        if(*flag == 1)
         {
-            list->station.rides = realloc(list->station.rides,sizeof(TRide) * (BLOCK + list->station.size));
-            if(checkMem((void *)list->station.rides, "ERROR: Cannot allocate memory."))
-            {
-                *flag = -1;
-                return;
-            }
-            list->station.size += BLOCK;
+            list->station.dim++;
         }
-        list->station.rides[list->station.dim].endId = endId;
-        list->station.rides[list->station.dim].isMember = isMember;
-        list->station.rides[list->station.dim].startMonth = month;
-        list->station.dim++;
-        *flag = 1;
         return;
     }
-    addRideRec(list->tail,startId,endId,isMember,month,flag);
-    return;
+    addRideRec(list->tail, startId, endId, isMember, month, flag);
 }
-
 
 int addRide(stationsADT st, size_t startId, size_t endId, int isMember, char * startDate)
 {
@@ -170,18 +188,31 @@ int addRide(stationsADT st, size_t startId, size_t endId, int isMember, char * s
     return flag;
 }
 
-static void freeList(TList list){
-    if(list == NULL){
+static void freeRList(RList list)
+{
+    if(list == NULL)
+    {
         return;
     }
-    freeList(list->tail);
-    free(list->station.rides);
+
+    freeRList(list->tail);
+    free(list);
+    return;
+}
+
+static void freeSList(SList list){
+    if(list == NULL)
+    {
+        return;
+    }
+    freeSList(list->tail);
+    freeRList(list->station.rides);
     free(list->station.name);
     free(list);
 }
 
 void freeStations(stationsADT st)
 {
-    freeList(st->list);
+    freeSList(st->list);
     free(st);
 }
