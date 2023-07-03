@@ -52,3 +52,4 @@ char * readField(FILE * file, int * flag)
     ans[len] = 0;
     return ans;
 }
+
