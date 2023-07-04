@@ -15,6 +15,15 @@ typedef struct query1Node
 } query1Node;
 
 typedef struct query1Node * query1List;
+
+typedef struct query2Elem
+{
+    char * stationA;
+    char * stationB;
+    size_t AtoB;
+    size_t BtoA;
+} query2Elem;
+
 /*
 ** @returns Un nuevo ADT de control de estaciones.
 **          En caso de error retorna NULL.
@@ -55,6 +64,9 @@ int addRide(stationsADT st, size_t startId, size_t endId, int isMember, char * s
 **          las estaciones del ADT. Ver estructura query1List.
  */
 query1List query1(stationsADT st);
+
+
+query2Elem * query2(stationsADT st, size_t * qty);
 
 /*
 ** Libera la lista de tipo query1 que recibe como parametro.

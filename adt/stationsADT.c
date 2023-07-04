@@ -6,6 +6,7 @@
 
 #define COPYBLOCK 10
 #define BLOCK 5000
+#define QUERY2BLOCK 50
 
 typedef struct ride
 {
@@ -225,6 +226,57 @@ void freeQuery1List(query1List list)
     freeQuery1List(list->tail);
     free(list->name);
     free(list);
+}
+
+static size_t tripsToStation(TRide * vector, size_t dim,  size_t id)
+{
+    size_t count = 0;
+    for(int i=0; i<dim; i++)
+    {
+        if(vector->endId == id)
+        {
+            count++;
+        }
+    }
+    return count;
+}
+
+query2Elem * query2(stationsADT st, size_t * qty)
+{
+    TList it1 = st->list;
+    TList it2;
+    size_t dim = 0;
+    size_t size = 0;
+    query2Elem * ans = NULL;
+
+    while(it1 != NULL)
+    {
+        it2 = st->list;
+        while(it2 != NULL)
+        {
+            if(it1->station.id != it2->station.id) /* No uso los viajes circulares */
+            {
+                if(dim == size)
+                {
+                    ans = realloc(ans, (size + QUERY2BLOCK) * sizeof(query2Elem));
+                    if(checkMem(ans, "ERROR: Memory cant be allocated."))
+                    {
+                        return NULL;
+                    }
+                    size += QUERY2BLOCK;
+                }
+                ans[dim].stationA = copyStr(it1->station.name);
+                ans[dim].stationB = copyStr(it2->station.name);
+                ans[dim].AtoB = tripsToStation(it1->station.rides, it1->station.dim, it2->station.id);
+                ans[dim].BtoA = tripsToStation(it2->station.rides, it2->station.dim, it1->station.id);
+                dim++;
+            }
+            it2 = it2->tail;
+        }
+        it1 = it1->tail;
+    }
+    *qty = dim;
+    return ans;
 }
 
 static void freeList(TList list){
