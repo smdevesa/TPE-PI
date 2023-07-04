@@ -108,8 +108,7 @@ int main(int argc, char ** argv)
 
     closeHTMLTable(tableQ1);
     fclose(csvQ1);
-
-    freeQuery1List(q1);
+    freeQuery1(q1);
     
 
     /* Fin del programa, se libera el ADT de estaciones */

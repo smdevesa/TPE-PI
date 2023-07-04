@@ -117,7 +117,7 @@ int main(int argc, char ** argv)
         it = it->tail;
     }
 
-    freeQuery1List(q1);
+    freeQuery1(q1);
 
     closeHTMLTable(tableQ1);
     fclose(csvQ1);

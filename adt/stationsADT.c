@@ -6,7 +6,9 @@
 
 #define COPYBLOCK 10
 #define BLOCK 5000
-#define QUERY2BLOCK 50
+#define QUERYBLOCK 50
+
+#define MONTHS_QTY 12
 
 typedef struct ride
 {
@@ -152,7 +154,7 @@ static void addRideRec(TList list, size_t startId, size_t endId, int isMember, u
         list->station.rides[list->station.dim].endId = endId;
         list->station.rides[list->station.dim].isMember = isMember;
         list->station.rides[list->station.dim].startMonth = month;
-        list->station.dim++;
+        list->station.dim += 1;
         list->station.memberRides += isMember;
         *flag = 1;
         return;
@@ -218,22 +220,22 @@ query1List query1(stationsADT st)
     return ans;
 }
 
-void freeQuery1List(query1List list)
+void freeQuery1(query1List list)
 {
     if(list == NULL)
         return;
     
-    freeQuery1List(list->tail);
+    freeQuery1(list->tail);
     free(list->name);
     free(list);
 }
 
-static size_t tripsToStation(TRide * vector, size_t dim,  size_t id)
+static size_t tripsToStation(TRide vector[], size_t dim,  size_t id)
 {
     size_t count = 0;
     for(int i=0; i<dim; i++)
     {
-        if(vector->endId == id)
+        if(vector[i].endId == id)
         {
             count++;
         }
@@ -258,12 +260,12 @@ query2Elem * query2(stationsADT st, size_t * qty)
             {
                 if(dim == size)
                 {
-                    ans = realloc(ans, (size + QUERY2BLOCK) * sizeof(query2Elem));
+                    ans = realloc(ans, (size + QUERYBLOCK) * sizeof(query2Elem));
                     if(checkMem(ans, "ERROR: Memory cant be allocated."))
                     {
                         return NULL;
                     }
-                    size += QUERY2BLOCK;
+                    size += QUERYBLOCK;
                 }
                 ans[dim].stationA = copyStr(it1->station.name);
                 ans[dim].stationB = copyStr(it2->station.name);
@@ -293,6 +295,58 @@ void freeQuery2(query2Elem * vector, size_t qty)
         free(vector[i].stationB);
     }
     free(vector);
+}
+
+static void getMonthsVec(size_t monthsVec[], TRide vector[], size_t dim)
+{
+    for(int i=0; i<dim; i++)
+    {
+        monthsVec[vector[i].startMonth - 1] += 1;
+    }
+}
+
+query3Elem * query3(stationsADT st, size_t * qty)
+{
+    size_t dim = 0;
+    size_t size = 0;
+    query3Elem * ans = NULL;
+    TList it = st->list;
+
+    while(it != NULL)
+    {
+        if(dim == size)
+        {
+            ans = realloc(ans, (size + QUERYBLOCK) * sizeof(query3Elem));
+            if(checkMem(ans, "ERROR: Memory cant be allocated\n"))
+            {
+                return NULL;
+            }
+            size += QUERYBLOCK;
+        }
+        ans[dim].mv = calloc(MONTHS_QTY, sizeof(size_t));
+        /* Rellenamos el vector de months */
+        getMonthsVec(ans[dim].mv, it->station.rides, it->station.dim);
+        ans[dim].name = copyStr(it->station.name);
+        dim++;
+        it = it->tail;
+    }
+    ans = realloc(ans, dim * sizeof(query3Elem));
+    if(checkMem(ans, "ERROR: Memory cant be allocated\n"))
+    {
+        return NULL;
+    }
+    *qty = dim;
+    return ans;
+}
+
+void freeQuery3(query3Elem * vec, size_t qty)
+{
+    for(int i=0; i<qty; i++)
+    {
+        free(vec[i].name);
+        free(vec[i].mv);
+    }
+    free(vec);
 }
 
 static void freeList(TList list){
