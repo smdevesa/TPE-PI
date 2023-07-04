@@ -5,7 +5,7 @@
 
 #define DELIM ";\n"
 #define MAXBUFFER 256
-#define BLOCK 50
+#define BLOCK 15
 
 static void checkMem(void * ptr, const char * message)
 {

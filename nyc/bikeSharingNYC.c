@@ -72,7 +72,6 @@ int main(int argc, char ** argv)
         {
             isMember = 0;
         }
-        printf("id inicio: %s, id fin: %s, ismember: %s (%d), fecha: %s\n",ans[1],ans[3],ans[5], isMember,ans[0]);
         flag = addRide(st, atoi(ans[1]), atoi(ans[3]), isMember, ans[0]);
         if(flag == -1)
         {
