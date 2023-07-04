@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DELIM ";"
+#define DELIM ";\n"
 #define MAXBUFFER 256
 #define BLOCK 50
 
