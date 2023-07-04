@@ -3,10 +3,17 @@
 #include <string.h>
 #include "../lib/frontLib.h"
 #include "../adt/stationsADT.h"
+#include "../lib/htmlTable.h"
 
 #define MAXBUFFER 256
 #define BIKES_FIELDS 5
 #define STATIONS_FIELDS 4 
+
+#define QUERY1_TABLE_NAME "query1.html"
+#define QUERY1_CSV_NAME "query1.csv"
+#define QUERY1_COLS 2
+#define QUERY1_COL1 "Station"
+#define QUERY1_COL2 "StartedTrips"
 
 int main(int argc, char ** argv)
 {
@@ -75,6 +82,35 @@ int main(int argc, char ** argv)
         free(ans);
     }
     fclose(FBikes);
+
+    query1List q1 = query1(st);
+    query1List it = q1;
+    
+    htmlTable tableQ1 = newTable(QUERY1_TABLE_NAME, QUERY1_COLS, QUERY1_COL1, QUERY1_COL2);
+    
+    FILE * csvQ1;
+    csvQ1 = fopen(QUERY1_CSV_NAME,"w");
+    if(csvQ1 == NULL)
+    {
+        fprintf(stderr, "ERROR: The file cant be opened.");
+        exit(1);
+    }
+
+    fprintf(csvQ1, "%s;%s\n", QUERY1_COL1,QUERY1_COL2);
+    while(it != NULL)
+    {
+        char * tripsString = sizeToString(it->startedTrips);
+        addHTMLRow(tableQ1, it->name, tripsString);
+        fprintf(csvQ1, "%s;%s\n", it->name, tripsString);
+        free(tripsString);
+        it = it->tail;
+    }
+
+    closeHTMLTable(tableQ1);
+    fclose(csvQ1);
+
+    freeQuery1List(q1);
+    
 
     /* Fin del programa, se libera el ADT de estaciones */
     freeStations(st);
