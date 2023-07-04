@@ -12,4 +12,9 @@
 */
 char ** getField(char * line, int fields);
 
+/*
+** @returns Un string con el numero recibido.
+ */
+char * sizeToString(size_t num);
+
 #endif

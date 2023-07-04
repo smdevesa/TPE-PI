@@ -57,6 +57,9 @@ dkms.conf
 
 # Dataset
 *.csv
+*.html
+/mon/*.html
+/nyc/*.html
 
 # Mac things
 .DS_Store

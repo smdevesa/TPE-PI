@@ -1,5 +1,6 @@
 #include "../lib/frontLib.h"
 #include "../adt/stationsADT.h"
+#include "../lib/htmlTable.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +8,12 @@
 #define MAXBUFFER 256
 #define BIKES_FIELDS 6
 #define STATIONS_FIELDS 4
+
+#define QUERY1_TABLE_NAME "query1.html"
+#define QUERY1_CSV_NAME "query1.csv"
+#define QUERY1_COLS 2
+#define QUERY1_COL1 "Station"
+#define QUERY1_COL2 "StartedTrips"
 
 int main(int argc, char ** argv)
 {
@@ -64,7 +71,7 @@ int main(int argc, char ** argv)
     while(fgets(line,MAXBUFFER, FBikes) != NULL)
     {
         ans = getField(line, BIKES_FIELDS);
-        if(ans[5][0] == 'm') /* Asumimos que los datos del csv estan bien, entonces basta con preguntar si la primer letra es una m */
+        if(strcmp("member", ans[5]) == 0) /* Asumimos que los datos del csv estan bien, entonces basta con preguntar si la primer letra es una m */
         {
             isMember = 1;
         }
@@ -86,6 +93,21 @@ int main(int argc, char ** argv)
     }
     fclose(FBikes);
 
+    query1List q1 = query1(st);
+    query1List it = q1;
+    htmlTable tableQ1 = newTable(QUERY1_TABLE_NAME, QUERY1_COLS, QUERY1_COL1, QUERY1_COL2);
+
+    while(it != NULL)
+    {
+        char * tripsString = sizeToString(it->startedTrips);
+        addHTMLRow(tableQ1, it->name, tripsString);
+
+        free(tripsString);
+        it = it->tail;
+    }
+
+    closeHTMLTable(tableQ1);
+    freeQuery1List(q1);
     /* Fin del programa, se libera el ADT de estaciones */
     freeStations(st);
     return 0;

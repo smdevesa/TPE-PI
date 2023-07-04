@@ -6,6 +6,15 @@
 typedef struct stationsCDT * stationsADT;
 
 
+/* Estructura de la lista utilizada para devolver los datos solicitados en la query 1 */
+typedef struct query1Node
+{
+    char * name;
+    size_t startedTrips;
+    struct query1Node * tail;
+} query1Node;
+
+typedef struct query1Node * query1List;
 /*
 ** @returns Un nuevo ADT de control de estaciones.
 **          En caso de error retorna NULL.
@@ -41,8 +50,23 @@ int addStation(stationsADT st, size_t id, char * name);
 int addRide(stationsADT st, size_t startId, size_t endId, int isMember, char * startDate);
 
 /*
+** @returns Una lista ordenada por cantidad de viajes de miembros
+**          y desempatada por nombre de estacion para cada una de
+**          las estaciones del ADT. Ver estructura query1List.
+ */
+query1List query1(stationsADT st);
+
+/*
+** Libera la lista de tipo query1 que recibe como parametro.
+ */
+void freeQuery1List(query1List list);
+
+
+/*
 ** Libera el ADT que recibe como parametro.
 */
 void freeStations(stationsADT st);
+
+
 
 #endif

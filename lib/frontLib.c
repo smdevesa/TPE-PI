@@ -40,7 +40,7 @@ static char * copyStr(char * s)
 char ** getField(char * line,int fields)
 {
     char ** ans = malloc(fields * sizeof(char *));
-    checkMem((void *) ans,"ERROR: Cannot allocate memory");
+    checkMem((void *) ans, "ERROR: Cannot allocate memory");
 
     ans[0] = copyStr(strtok(line, DELIM));  
     for(int i=1; i < fields; i++)
@@ -48,5 +48,27 @@ char ** getField(char * line,int fields)
         ans[i] = copyStr(strtok(NULL, DELIM));
     }
 
+    return ans;
+}
+
+char * sizeToString(size_t num)
+{
+    int digits = num > 0 ? 0 : 1;
+    size_t aux = num;
+
+    while(aux > 0)
+    {
+        digits++;
+        aux /= 10;
+    }
+    char * ans = malloc((digits + 1) * sizeof(char));
+    checkMem((void *) ans, "ERROR: Cannot allocate memory");
+
+    for(int i=(digits-1); i>=0; i--)
+    {
+        ans[i] = num % 10 + '0';
+        num /= 10;
+    }
+    ans[digits] = 0;
     return ans;
 }

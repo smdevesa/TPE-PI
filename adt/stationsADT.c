@@ -19,6 +19,7 @@ typedef struct station
     size_t id; /* ID de la estacion */
     char * name; /* Nombre de la estacion */
     TRide * rides; /* Vector de rides que salieron desde la estacion */
+    size_t memberRides; /* Cantidad de viajes hechos por miembros */
     size_t dim; /* Cantidad de rides que salieron desde la estacion */
     size_t size; /* Espacio reservado en el vector de rides */
 } TStation;
@@ -34,7 +35,6 @@ typedef struct node * TList;
 typedef struct stationsCDT
 {
     TList list; /* Lista de estaciones */
-    TList it; /* Iterador */
     size_t qty; /* Cantidad de estaciones */
 } stationsCDT;
 
@@ -100,6 +100,7 @@ static TList addStationRec(TList list, size_t id, char * name, int * flag)
         newNode->station.rides = NULL;
         newNode->station.dim = 0;
         newNode->station.size = 0;
+        newNode->station.memberRides = 0;
         newNode->station.name = copyStr(name);
         if(newNode->station.name == NULL)
         {
@@ -131,7 +132,7 @@ int addStation(stationsADT st, size_t id, char * name)
 
 static void addRideRec(TList list, size_t startId, size_t endId, int isMember, unsigned short month, int *flag)
 {
-    if(list == NULL || list->station.id > startId)
+    if(list == NULL)
     {
         return;
     }
@@ -151,6 +152,7 @@ static void addRideRec(TList list, size_t startId, size_t endId, int isMember, u
         list->station.rides[list->station.dim].isMember = isMember;
         list->station.rides[list->station.dim].startMonth = month;
         list->station.dim++;
+        list->station.memberRides += isMember;
         *flag = 1;
         return;
     }
@@ -169,6 +171,60 @@ int addRide(stationsADT st, size_t startId, size_t endId, int isMember, char * s
     unsigned short month = atoi(startDate + 5); 
     addRideRec(st->list, startId, endId, isMember, month, &flag);
     return flag;
+}
+
+query1List query1Add(query1List list, char * name, size_t startedTrips, int * flag)
+{
+    if(list == NULL || list->startedTrips < startedTrips || (list->startedTrips == startedTrips && strcmp(name, list->name) < 0))
+    {
+        query1List newNode = malloc(sizeof(struct query1Node));
+        if(checkMem((void *)newNode, "ERROR: Cannot allocate memory."))
+        {
+            *flag = -1;
+            return list;
+        }
+        newNode->name = copyStr(name);
+        if(name == NULL)
+        {
+            *flag = -1;
+            return list;
+        }
+        *flag = 1;
+        newNode->startedTrips = startedTrips;
+        newNode->tail = list;
+        return newNode;
+    }
+    list->tail = query1Add(list->tail, name, startedTrips, flag);
+    return list;
+}
+
+query1List query1(stationsADT st)
+{
+    TList it = st->list;
+    query1List ans = NULL;
+    int flag;
+
+    while(it != NULL)
+    {
+        flag = 0;
+        ans = query1Add(ans, it->station.name, it->station.memberRides, &flag);
+        if(flag == -1)
+        {
+            return ans;
+        }
+        it = it->tail;
+    }
+    return ans;
+}
+
+void freeQuery1List(query1List list)
+{
+    if(list == NULL)
+        return;
+    
+    freeQuery1List(list->tail);
+    free(list->name);
+    free(list);
 }
 
 static void freeList(TList list){
