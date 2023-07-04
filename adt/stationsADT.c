@@ -275,8 +275,24 @@ query2Elem * query2(stationsADT st, size_t * qty)
         }
         it1 = it1->tail;
     }
+
+    ans = realloc(ans, dim * sizeof(query2Elem));
+    if(checkMem(ans, "ERROR: Memory cant be allocated"))
+    {
+        return NULL;
+    }
     *qty = dim;
     return ans;
+}
+
+void freeQuery2(query2Elem * vector, size_t qty)
+{
+    for(int i=0; i < qty ; i++)
+    {
+        free(vector[i].stationA);
+        free(vector[i].stationB);
+    }
+    free(vector);
 }
 
 static void freeList(TList list){

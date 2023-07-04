@@ -17,4 +17,6 @@ char ** getField(char * line, int fields);
  */
 char * sizeToString(size_t num);
 
+void checkFile(FILE * ans);
+
 #endif

@@ -63,16 +63,16 @@ int addRide(stationsADT st, size_t startId, size_t endId, int isMember, char * s
 **          y desempatada por nombre de estacion para cada una de
 **          las estaciones del ADT. Ver estructura query1List.
  */
-query1List query1(stationsADT st);
-
-
-query2Elem * query2(stationsADT st, size_t * qty);
+query1List query1(stationsADT st);\
 
 /*
 ** Libera la lista de tipo query1 que recibe como parametro.
  */
 void freeQuery1List(query1List list);
 
+query2Elem * query2(stationsADT st, size_t * qty);
+
+void freeQuery2(query2Elem * vec, size_t qty);
 
 /*
 ** Libera el ADT que recibe como parametro.

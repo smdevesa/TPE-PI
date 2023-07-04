@@ -72,3 +72,13 @@ char * sizeToString(size_t num)
     ans[digits] = 0;
     return ans;
 }
+
+void checkFile(FILE * ans)
+{
+    if(ans == NULL)
+    {
+        fprintf(stderr,"ERROR: file cant be opened.");
+        exit(1);
+    }
+
+}

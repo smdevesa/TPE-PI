@@ -14,6 +14,14 @@
 #define QUERY1_COLS 2
 #define QUERY1_COL1 "Station"
 #define QUERY1_COL2 "StartedTrips"
+#define QUERY2_TABLE_NAME "query2.html"
+#define QUERY2_CSV_NAME "query2.csv"
+#define QUERY2_COLS 4
+#define QUERY2_COL1 "StationA"
+#define QUERY2_COL2 "StationB"
+#define QUERY2_COL3 "Trips A->B"
+#define QUERY2_COL4 "Trips B->A"
+
 
 int main(int argc, char ** argv)
 {
@@ -27,11 +35,8 @@ int main(int argc, char ** argv)
     FILE * FBikes = fopen(argv[1], "r");
     FILE * FStations = fopen(argv[2], "r");
     
-    if(FBikes == NULL || FStations == NULL)
-    {
-        fprintf(stderr, "ERROR: The file cant be opened.");
-        exit(1);
-    }
+    checkFile(FBikes);
+    checkFile(FStations);
 
     /* Se consume la primer linea de los documentos para no leer los nombres de los campos */
     char line[MAXBUFFER];
@@ -100,11 +105,7 @@ int main(int argc, char ** argv)
     
     FILE * csvQ1;
     csvQ1 = fopen(QUERY1_CSV_NAME,"w");
-    if(csvQ1 == NULL)
-    {
-        fprintf(stderr, "ERROR: The file cant be opened.");
-        exit(1);
-    }
+    checkFile(csvQ1);
 
     fprintf(csvQ1, "%s;%s\n", QUERY1_COL1,QUERY1_COL2);
     while(it != NULL)
@@ -116,10 +117,36 @@ int main(int argc, char ** argv)
         it = it->tail;
     }
 
+    freeQuery1List(q1);
+
     closeHTMLTable(tableQ1);
     fclose(csvQ1);
 
-    freeQuery1List(q1);
+    size_t qty=0;
+    query2Elem * q2 = query2(st, &qty);
+
+    htmlTable tableQ2 = newTable(QUERY2_TABLE_NAME, QUERY2_COLS, QUERY2_COL1, QUERY2_COL2, QUERY2_COL3, QUERY2_COL4);
+
+    FILE * csvQ2;
+    csvQ2 = fopen(QUERY2_CSV_NAME,"w");
+    checkFile(csvQ2);
+
+    fprintf(csvQ2, "%s;%s;%s;%s\n", QUERY2_COL1, QUERY2_COL2, QUERY2_COL3, QUERY2_COL4);
+    for(int i=0; i < qty; i++)
+    {
+        char * stringAtoB = sizeToString(q2[i].AtoB);
+        char * stringBtoA = sizeToString(q2[i].BtoA);
+        addHTMLRow(tableQ2, q2[i].stationA, q2[i].stationB, stringAtoB, stringBtoA);
+        fprintf(csvQ2, "%s;%s;%s;%s\n", q2[i].stationA, q2[i].stationB, stringAtoB, stringBtoA);
+        free(stringAtoB);
+        free(stringBtoA);
+    }
+
+    freeQuery2(q2, qty);
+
+    closeHTMLTable(tableQ2);
+    fclose(csvQ2);
+    
     /* Fin del programa, se libera el ADT de estaciones */
     freeStations(st);
     return 0;
