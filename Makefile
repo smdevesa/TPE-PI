@@ -9,7 +9,7 @@ mon/bikeSharingMON.out: mon/bikeSharingMON.c lib/frontLib.o adt/stationsADT.o li
 	@$(COMPILER) $(DEBUGFLAGS) mon/bikeSharingMON.c lib/frontLib.o adt/stationsADT.o lib/htmlTable.o -o $(MON_OUTPUT_FILE)
 
 nyc/bikeSharingNYC.out: nyc/bikeSharingNYC.c lib/frontLib.o adt/stationsADT.o lib/htmlTable.o
-	@$(COMPILER) $(DEBUGFLAGSFLAGS) nyc/bikeSharingNYC.c lib/frontLib.o adt/stationsADT.o lib/htmlTable.o -o $(NYC_OUTPUT_FILE)
+	@$(COMPILER) $(DEBUGFLAGS) nyc/bikeSharingNYC.c lib/frontLib.o adt/stationsADT.o lib/htmlTable.o -o $(NYC_OUTPUT_FILE)
 
 lib/frontLib.o: lib/frontLib.c
 	@$(COMPILER) -c lib/frontLib.c $(DEBUGFLAGS) -o lib/frontLib.o
