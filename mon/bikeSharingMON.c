@@ -25,18 +25,15 @@ int main(int argc, char ** argv)
     /* Se comprueba que los archivos enviados sean 2 */
     if(argc != 3)
     {
-        fprintf(stderr, "ERROR: The amount of files recieved is invalid.");
+        fprintf(stderr, "ERROR: The amount of files recieved is invalid.\n");
         exit(1);
     }
 
     FILE * FBikes = fopen(argv[1], "r");
+    checkFile(FBikes);
+
     FILE * FStations = fopen(argv[2], "r");
-    
-    if(FBikes == NULL || FStations == NULL)
-    {
-        fprintf(stderr, "ERROR: The file cant be opened.");
-        exit(1);
-    }
+    checkFile(FStations);
    
    /* Se consume la primer linea de los documentos para no leer los nombres de los campos */
     char line[MAXBUFFER];
@@ -57,7 +54,7 @@ int main(int argc, char ** argv)
         flag = addStation(st, atoi(ans[0]), ans[1]);
         if(flag == -1)
         {
-            fprintf(stderr, "ERROR: Memory cant be allocated");
+            fprintf(stderr, "ERROR: Memory cant be allocated.\n");
             exit(1);
         }
         /* Liberamos el espacio reservado por auxiliares */
@@ -77,7 +74,7 @@ int main(int argc, char ** argv)
         flag = addRide(st, atoi(ans[1]), atoi(ans[3]),atoi(ans[4]),ans[0]);
         if(flag == -1)
         {
-            fprintf(stderr, "ERROR: Memory cant be allocated");
+            fprintf(stderr, "ERROR: Memory cant be allocated.\n");
             exit(1);
         }
         for(int i=0; i < BIKES_FIELDS; i++)
@@ -88,18 +85,21 @@ int main(int argc, char ** argv)
     }
     fclose(FBikes);
 
-      query1List Q1 = query1(st);
-    query1List it = Q1;
+    query1List Q1 = query1(st);
+    query1List it = Q1; /* Iterador para la lista */
     
+    /* Creamos tabla HTML con los campos requeridos para la query 1 */
     htmlTable tableQ1 = newTable(QUERY1_TABLE_NAME, QUERY1_COLS, "Station", "StartedTrips");
     
-    FILE * csvQ1;
-    csvQ1 = fopen(QUERY1_CSV_NAME,"w");
+    FILE * csvQ1; /* Archivo CSV de salida */
+    csvQ1 = fopen(QUERY1_CSV_NAME, "w");
     checkFile(csvQ1);
 
+    /* Campos del archivo CSV */
     fprintf(csvQ1, "%s;%s\n", "Station", "StartedTrips");
     while(it != NULL)
     {
+        /* Cargamos la misma informacion en la tabla y en el CSV */
         char * tripsString = sizeToString(it->startedTrips);
         addHTMLRow(tableQ1, it->name, tripsString);
         fprintf(csvQ1, "%s;%s\n", it->name, tripsString);
@@ -107,23 +107,27 @@ int main(int argc, char ** argv)
         it = it->tail;
     }
 
+    /* Cerramos los archivos y liberamos la lista */
     freeQuery1(Q1);
-
     closeHTMLTable(tableQ1);
     fclose(csvQ1);
 
-    size_t qtyQ2 = 0;
+    size_t qtyQ2; /* Dimension del vector de la query 2 */
     query2Elem * Q2 = query2(st, &qtyQ2);
 
+    /* Archivo HTML con los campos necesarios de la query 2 */
     htmlTable tableQ2 = newTable(QUERY2_TABLE_NAME, QUERY2_COLS, "StationA", "StationB", "Trips A->B", "Trips B->A");
 
+    /* Archivo CSV para la query 2 */
     FILE * csvQ2;
     csvQ2 = fopen(QUERY2_CSV_NAME,"w");
     checkFile(csvQ2);
 
+    /* Campos del archivo CSV */
     fprintf(csvQ2, "%s;%s;%s;%s\n", "StationA", "StationB", "Trips A->B", "Trips B->A");
     for(int i=0; i < qtyQ2; i++)
     {
+        /* Se cargan los datos en ambos archivos */
         char * stringAtoB = sizeToString(Q2[i].AtoB);
         char * stringBtoA = sizeToString(Q2[i].BtoA);
         addHTMLRow(tableQ2, Q2[i].stationA, Q2[i].stationB, stringAtoB, stringBtoA);
@@ -132,38 +136,48 @@ int main(int argc, char ** argv)
         free(stringBtoA);
     }
 
+    /* Liberamos espacio y cerramos los archivos */
     freeQuery2(Q2, qtyQ2);
-
     closeHTMLTable(tableQ2);
     fclose(csvQ2);
 
-    size_t qtyQ3 = 0; 
+    size_t qtyQ3;
     query3Elem * Q3 = query3(st, &qtyQ3);
 
+    /* Archivo HTML con los campos de la query3 */
     htmlTable tableQ3 = newTable(QUERY3_TABLE_NAME, QUERY3_COLS, "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", "Station");
 
+    /* Archivo CSV para almacenar los datos de la query3 */
     FILE * csvQ3;
     csvQ3 = fopen(QUERY3_CSV_NAME, "w");
     checkFile(csvQ3);
 
+    /* Campos CSV */
     fprintf(csvQ3, "%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s\n", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", "Station");
     for(int i = 0; i < qtyQ3; i++)
     {
-       char * vec[MONTHS];
-       for(int j = 0; j < MONTHS; j++)
-       {
-        vec[j] = sizeToString(Q3[i].mv[j]);
-       }
-       addHTMLRow(tableQ3, vec[0], vec[1], vec[2], vec[3], vec[4], vec[5], vec[6], vec[7], vec[8], vec[9], vec[10], vec[11], Q3[i].name);
-       fprintf(csvQ3, "%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s\n", vec[0], vec[1], vec[2], vec[3], vec[4], vec[5], vec[6], vec[7], vec[8], vec[9], vec[10], vec[11], Q3[i].name);
-       for(int k=0; k < MONTHS; k++)
-       {
-        free(vec[k]);
-       }
+        /* Vector con los meses convertidos a string */ 
+        char * vec[MONTHS];
+        for(int j = 0; j < MONTHS; j++)
+        {
+            vec[j] = sizeToString(Q3[i].mv[j]);
+        }
+
+        addHTMLRow(tableQ3, vec[0], vec[1], vec[2], vec[3], vec[4], vec[5], vec[6], vec[7], vec[8], vec[9], vec[10], vec[11], Q3[i].name);
+
+        /* Imprimimos mes a mes */
+        for(int k=0; k < MONTHS; k++)
+        {
+            fprintf(csvQ3, "%s;", vec[k]);
+            free(vec[k]);
+        }
+
+        /* Imprimimos el nombre al final */
+        fprintf(csvQ3, "%s\n", Q3[i].name);
     }
 
+    /* Cerramos los archivos y liberamos la query 3 */
     freeQuery3(Q3,qtyQ3);
-
     closeHTMLTable(tableQ3);
     fclose(csvQ3);
     

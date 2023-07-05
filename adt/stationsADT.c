@@ -29,7 +29,7 @@ typedef struct station
 
 typedef struct node
 {
-    TStation station;
+    TStation station; /* Struct con todos los datos necesarios de la estacion */
     struct node * tail;
 } TNode;
 
@@ -41,6 +41,11 @@ typedef struct stationsCDT
     size_t qty; /* Cantidad de estaciones */
 } stationsCDT;
 
+/*
+** Funcion para chequear si se reservo bien la memoria
+** si el puntero recibido es NULL imprime el mensaje recibido
+** en stderr.
+ */
 static int checkMem(void * ptr, const char * message)
 {
     if(ptr == NULL)
@@ -53,14 +58,20 @@ static int checkMem(void * ptr, const char * message)
 
 stationsADT newStationsADT(void)
 {
+    /* Se incializa en NULL la lista y qty en cero */
     stationsADT new = calloc(1, sizeof(struct stationsCDT));
-    if(checkMem((void *)new, "ERROR: Cannot allocate memory."))
+    if(checkMem((void *)new, "ERROR: Memory cant be allocated.\n"))
     {
         return NULL;
     }
     return new;
 }
 
+/*
+** Copia por bloques de tipo COPYBLOCK el string s y devuelve
+** en su nombre el vector que contiene el string.
+** En caso de error de memoria imprime error y devuelve NULL.
+ */
 static char * copyStr(char * s)
 {
     char * ans = NULL;
@@ -71,7 +82,7 @@ static char * copyStr(char * s)
         if(i % COPYBLOCK == 0)
         {
             ans = realloc(ans, (COPYBLOCK+i) * sizeof(char));
-            if(checkMem((void *)ans, "ERROR: Cannot allocate memory."))
+            if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
             {
                 return NULL;
             }
@@ -79,8 +90,9 @@ static char * copyStr(char * s)
         ans[i] = s[i];
     }
 
+    /* Se recorta el string para que solo ocupe lo necesario. */
     ans = realloc(ans, (i+1) * sizeof(char));
-    if(checkMem((void *)ans, "ERROR: Cannot allocate memory."))
+    if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
     {
         return NULL;
     }
@@ -88,22 +100,25 @@ static char * copyStr(char * s)
     return ans;
 }
 
-static TList addStationRec(TList list, size_t id, char * name, int * flag)
+/*
+** Auxiliar que agrega una estacion a la lista recibida ordenandola por NOMBRE
+** de forma alfabetica. El flag queda en 0 si no se pudo agregar la estacion
+** (tiene el nombre repetido), sera 1 si se agrego correctamente o sera
+** -1 si no se pudo reservar memoria de manera correcta.
+ */
+static TList addStationRec(TList list, size_t id, const char * name, int * flag)
 {
-    int c;
+    int c; /* Guardamos en c la comparacion para no hacerla dos veces */
     if(list == NULL || (c = strcmp(name, list->station.name)) < 0)
     {
-        TList newNode = malloc(sizeof(struct node));
-        if(checkMem((void *)newNode, "ERROR: Cannot allocate memory."))
+        /* Inicializamos rides y name en NULL y el resto de los campos en 0 */
+        TList newNode = calloc(1, sizeof(struct node));
+        if(checkMem((void *)newNode, "ERROR: Memory cant be allocated.\n"))
         {
             *flag = -1;
             return list;
         }
         newNode->station.id = id;
-        newNode->station.rides = NULL;
-        newNode->station.dim = 0;
-        newNode->station.size = 0;
-        newNode->station.memberRides = 0;
         newNode->station.name = copyStr(name);
         if(newNode->station.name == NULL)
         {
@@ -113,6 +128,7 @@ static TList addStationRec(TList list, size_t id, char * name, int * flag)
         newNode->tail = list;
         return newNode;
     }
+    /* La estacion estaba repetida */
     if(c == 0)
     {
         return list;
@@ -122,7 +138,7 @@ static TList addStationRec(TList list, size_t id, char * name, int * flag)
 }
 
 
-int addStation(stationsADT st, size_t id, char * name)
+int addStation(stationsADT st, size_t id, const char * name)
 {
     int flag = 0;
     st->list = addStationRec(st->list, id, name, &flag);
@@ -133,18 +149,26 @@ int addStation(stationsADT st, size_t id, char * name)
     return flag;
 }
 
+/*
+** Funcion que busca la estacion de startId que recibe e ingresa un ride a su vector de
+** alquileres con el endId, isMember y month recibido.
+** El flag no se modifica si no se pudo agregar, sera 1 si se agrego o -1 si no se pudo
+** reservar memoria.
+ */
 static void addRideRec(TList list, size_t startId, size_t endId, int isMember, unsigned short month, int *flag)
 {
+    /* La estacion a la que se quiere agregar no existe */
     if(list == NULL)
     {
         return;
     }
     if(list->station.id == startId)
     {
+        /* Agrandamos el vector de a bloques */
         if(list->station.dim == list->station.size)
         {
             list->station.rides = realloc(list->station.rides,sizeof(TRide) * (BLOCK + list->station.size));
-            if(checkMem((void *)list->station.rides, "ERROR: Cannot allocate memory."))
+            if(checkMem((void *)list->station.rides, "ERROR: Memory cant be allocated.\n"))
             {
                 *flag = -1;
                 return;
@@ -160,33 +184,41 @@ static void addRideRec(TList list, size_t startId, size_t endId, int isMember, u
         return;
     }
     addRideRec(list->tail,startId,endId,isMember,month,flag);
-    return;
 }
 
-int addRide(stationsADT st, size_t startId, size_t endId, int isMember, char * startDate)
+int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const char * startDate)
 {
     if(isMember != 0 && isMember != 1)
     {
-        fprintf(stderr, "ERROR: invalid type of data\n");
+        fprintf(stderr, "ERROR: isMember must be 1 or 0.\n");
         return -1;
     }
     int flag = 0;
-    unsigned short month = atoi(startDate + 5); 
+    unsigned short month = atoi(startDate + 5); /* Extraemos el mes del formato de fecha enviado */
     addRideRec(st->list, startId, endId, isMember, month, &flag);
     return flag;
 }
 
+/*
+** Funcion que agrega un elemento a la lista de tipo query1
+** se ordenara segun startedTrips descendentemente y se desempata
+** por orden alfabetico. El flag sera 1 si se pudo agregar o -1 si
+** no se pudo reservar memoria.
+** IMPORTANTE: La funcion no chequea que no hayan repetidos.
+ */
 query1List query1Add(query1List list, char * name, size_t startedTrips, int * flag)
 {
+    /* Ordenamos primero por startedTrips, luego alfabeticamente si empatan */
     if(list == NULL || list->startedTrips < startedTrips || (list->startedTrips == startedTrips && strcmp(name, list->name) < 0))
     {
         query1List newNode = malloc(sizeof(struct query1Node));
-        if(checkMem((void *)newNode, "ERROR: Cannot allocate memory."))
+        if(checkMem((void *)newNode, "ERROR: Memory cant be allocated.\n"))
         {
             *flag = -1;
             return list;
         }
         newNode->name = copyStr(name);
+        /* Chequeamos que el nombre se haya copiado bien */
         if(name == NULL)
         {
             *flag = -1;
@@ -230,6 +262,10 @@ void freeQuery1(query1List list)
     free(list);
 }
 
+/*
+** Devuelve la cantidad de viajes que encuentre en un vector de TRides
+** que terminen en la estacion de la id recibida.
+ */
 static size_t tripsToStation(TRide vector[], size_t dim,  size_t id)
 {
     size_t count = 0;
@@ -261,7 +297,7 @@ query2Elem * query2(stationsADT st, size_t * qty)
                 if(dim == size)
                 {
                     ans = realloc(ans, (size + QUERYBLOCK) * sizeof(query2Elem));
-                    if(checkMem(ans, "ERROR: Memory cant be allocated."))
+                    if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
                     {
                         return NULL;
                     }
@@ -278,8 +314,9 @@ query2Elem * query2(stationsADT st, size_t * qty)
         it1 = it1->tail;
     }
 
+    /* Recortamos el vector para que ocupe solo lo que ocupo */
     ans = realloc(ans, dim * sizeof(query2Elem));
-    if(checkMem(ans, "ERROR: Memory cant be allocated"))
+    if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
     {
         return NULL;
     }
@@ -297,6 +334,12 @@ void freeQuery2(query2Elem * vector, size_t qty)
     free(vector);
 }
 
+/*
+** Recibe un vector de TRides y su dimension y a partir de eso
+** rellena el monthsVec con las cantidades de viajes de cada mes
+** siendo el indice 0 ENERO, 1 FEBRERO y asi sucesivamente hasta
+** 11 DICIEMBRE.
+ */
 static void getMonthsVec(size_t monthsVec[], TRide vector[], size_t dim)
 {
     for(int i=0; i<dim; i++)
@@ -317,7 +360,7 @@ query3Elem * query3(stationsADT st, size_t * qty)
         if(dim == size)
         {
             ans = realloc(ans, (size + QUERYBLOCK) * sizeof(query3Elem));
-            if(checkMem(ans, "ERROR: Memory cant be allocated\n"))
+            if(checkMem((void *)ans, "ERROR: Memory cant be allocated\n"))
             {
                 return NULL;
             }
@@ -331,7 +374,7 @@ query3Elem * query3(stationsADT st, size_t * qty)
         it = it->tail;
     }
     ans = realloc(ans, dim * sizeof(query3Elem));
-    if(checkMem(ans, "ERROR: Memory cant be allocated\n"))
+    if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
     {
         return NULL;
     }
@@ -349,6 +392,9 @@ void freeQuery3(query3Elem * vec, size_t qty)
     free(vec);
 }
 
+/*
+** Libera la lista de tipo TList recibida.
+ */
 static void freeList(TList list){
     if(list == NULL){
         return;

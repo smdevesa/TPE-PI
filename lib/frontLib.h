@@ -10,13 +10,18 @@
 ** @returns Vector de strings con cada campo separado. En la posicion 0
 **          estaria el primero que encuentre y asi sucesivamente.
 */
-char ** getField(char * line, int fields);
+char ** getField(const char * line, int fields);
 
 /*
-** @returns Un string con el numero recibido.
+** @returns Un string con el numero positivo recibido.
  */
 char * sizeToString(size_t num);
 
-void checkFile(FILE * ans);
+/*
+** Verifica que un archivo se haya abierto de forma correcta
+** en caso de que no se haya podido abrir imprime un error en
+** stderr y aborta en ejecucion.
+ */
+void checkFile(FILE * file);
 
 #endif

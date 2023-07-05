@@ -1,31 +1,44 @@
 #ifndef _STATIONSADT_H_
 #define _STATIONSADT_H_
 
+/*
+** Contrato de ADT que permite controlar un sistema de alquiler
+** de bicicletas que permite almacenar datos y hacer consultas
+** variadas explicadas en detalle en las funciones query1, query2 y query3.
+ */
+
 #include <stddef.h>
 
 typedef struct stationsCDT * stationsADT;
 
-/* Estructura de la lista utilizada para devolver los datos solicitados en la query 1 */
+/* Estructura de los nodos de la lista utilizada para devolver los datos solicitados en la query 1 */
 typedef struct query1Node
 {
-    char * name;
-    size_t startedTrips;
+    char * name; /* Nombre de la estacion */
+    size_t startedTrips; /* Cantidad de viajes empezados por MIEMBROS  en la estacion */
     struct query1Node * tail;
 } query1Node;
 
 typedef struct query1Node * query1List;
 
+/* Estructura de los elementos del vector utilizado para devolver los datos solicitados en la query 2 */
 typedef struct query2Elem
 {
-    char * stationA;
-    char * stationB;
-    size_t AtoB;
-    size_t BtoA;
+    char * stationA; /* Nombre de la estacion A */
+    char * stationB; /* Nombre de la estacion B */
+    size_t AtoB; /* Cantidad de viajes desde A hasta B */
+    size_t BtoA; /* Cantidad de viajes desde B hasta A */
 } query2Elem;
 
+/* Estructura de los elementos del vector utilizado para devolver los datos solicitados en la query 3 */
 typedef struct query3Elem
 {
-    char * name;
+    char * name; /* Nombre de la estacion */
+    /*
+    ** Vector con la cantidad de viajes segun el mes del año
+    ** donde cada indice simboliza un mes siendo 0 ENERO, 1 FEBRERO
+    ** y asi sucesivamente hasta 11 DICIEMBRE. Su dimension es 12.
+     */
     size_t * mv;
 } query3Elem;
 
@@ -45,7 +58,7 @@ stationsADT newStationsADT(void);
 ** @param id ID de la estacion a agregar.
 ** @param name Nombre de la estacion a agregar.
  */
-int addStation(stationsADT st, size_t id, char * name);
+int addStation(stationsADT st, size_t id, const char * name);
 
 
 /*
@@ -61,7 +74,7 @@ int addStation(stationsADT st, size_t id, char * name);
 ** @param isMember Flag de si el usuario es miembro (1) o no (0).
 ** @param startDate Fecha de inicio y hora de inicio del recorrido.
 */
-int addRide(stationsADT st, size_t startId, size_t endId, int isMember, char * startDate);
+int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const char * startDate);
 
 /*
 ** @returns Una lista ordenada por cantidad de viajes de miembros
@@ -75,19 +88,42 @@ query1List query1(stationsADT st);
  */
 void freeQuery1(query1List list);
 
+/*
+** @returns Un vector de query2Elem (ver estructura en el contrato)
+**          ordenado por nombre de la estacion A y desempatado por
+**          nombre de la estacion B con los viajes desde A hasta B
+**          y desde B hasta A.
+**
+**  @param st El stationsADT sobre el que se quiere hacer la consulta.
+**  @param qty Parametro de salida en el que se devuelve la dimension del vector.
+**
+ */
 query2Elem * query2(stationsADT st, size_t * qty);
 
+/*
+** Libera el vector de query2Elem que recibe como parametro
+** siendo qty su dimension.
+ */
 void freeQuery2(query2Elem * vec, size_t qty);
 
+/*
+** @returns Un vector de query3Elem (ver estructura en el contrato)
+**          ordenado por nombre de la estacion.
+**
+**  @param st El stationsADT sobre el que se quiere hacer la consulta.
+**  @param qty Parametro de salida en el que se devuelve la dimension del vector.
+ */
 query3Elem * query3(stationsADT st, size_t * qty);
 
+/*
+** Libera el vector de query3Elem que recibe como parametro
+** siendo qty su dimension.
+ */
 void freeQuery3(query3Elem * vec, size_t qty);
 
 /*
 ** Libera el ADT que recibe como parametro.
 */
 void freeStations(stationsADT st);
-
-
 
 #endif
