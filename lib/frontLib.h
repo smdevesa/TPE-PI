@@ -10,7 +10,7 @@
 ** @returns Vector de strings con cada campo separado. En la posicion 0
 **          estaria el primero que encuentre y asi sucesivamente.
 */
-char ** getField(const char * line, int fields);
+char ** getField(char * line, int fields);
 
 /*
 ** @returns Un string con el numero positivo recibido.

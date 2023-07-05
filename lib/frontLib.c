@@ -46,7 +46,7 @@ static char * copyStr(const char * s)
     return ans;
 }
 
-char ** getField(const char * line, int fields)
+char ** getField(char * line, int fields)
 {
     char ** ans = malloc(fields * sizeof(char *));
     checkMem((void *) ans, "ERROR: Memory cant be allocated.\n");

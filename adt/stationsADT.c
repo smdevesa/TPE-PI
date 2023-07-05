@@ -72,7 +72,7 @@ stationsADT newStationsADT(void)
 ** en su nombre el vector que contiene el string.
 ** En caso de error de memoria imprime error y devuelve NULL.
  */
-static char * copyStr(char * s)
+static char * copyStr(const char * s)
 {
     char * ans = NULL;
     int i;
