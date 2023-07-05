@@ -146,7 +146,7 @@ int main(int argc, char ** argv)
     fclose(csvQ2);
 
     size_t qtyQ3 = 0; 
-    query3Elem * Q3 = query3(st, qtyQ3);
+    query3Elem * Q3 = query3(st, &qtyQ3);
 
     htmlTable tableQ3 = newTable(QUERY3_TABLE_NAME, QUERY3_COLS, "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", "Station");
 

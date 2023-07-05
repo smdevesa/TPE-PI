@@ -8,12 +8,17 @@
 #define MAXBUFFER 256
 #define BIKES_FIELDS 5
 #define STATIONS_FIELDS 4 
+#define MONTHS 12
 
 #define QUERY1_TABLE_NAME "query1.html"
 #define QUERY1_CSV_NAME "query1.csv"
 #define QUERY1_COLS 2
-#define QUERY1_COL1 "Station"
-#define QUERY1_COL2 "StartedTrips"
+#define QUERY2_TABLE_NAME "query2.html"
+#define QUERY2_CSV_NAME "query2.csv"
+#define QUERY2_COLS 4
+#define QUERY3_TABLE_NAME "query3.html"
+#define QUERY3_CSV_NAME "query3.csv"
+#define QUERY3_COLS 13
 
 int main(int argc, char ** argv)
 {
@@ -83,20 +88,16 @@ int main(int argc, char ** argv)
     }
     fclose(FBikes);
 
-    query1List q1 = query1(st);
-    query1List it = q1;
+      query1List Q1 = query1(st);
+    query1List it = Q1;
     
-    htmlTable tableQ1 = newTable(QUERY1_TABLE_NAME, QUERY1_COLS, QUERY1_COL1, QUERY1_COL2);
+    htmlTable tableQ1 = newTable(QUERY1_TABLE_NAME, QUERY1_COLS, "Station", "StartedTrips");
     
     FILE * csvQ1;
     csvQ1 = fopen(QUERY1_CSV_NAME,"w");
-    if(csvQ1 == NULL)
-    {
-        fprintf(stderr, "ERROR: The file cant be opened.");
-        exit(1);
-    }
+    checkFile(csvQ1);
 
-    fprintf(csvQ1, "%s;%s\n", QUERY1_COL1,QUERY1_COL2);
+    fprintf(csvQ1, "%s;%s\n", "Station", "StartedTrips");
     while(it != NULL)
     {
         char * tripsString = sizeToString(it->startedTrips);
@@ -106,9 +107,65 @@ int main(int argc, char ** argv)
         it = it->tail;
     }
 
+    freeQuery1(Q1);
+
     closeHTMLTable(tableQ1);
     fclose(csvQ1);
-    freeQuery1(q1);
+
+    size_t qtyQ2 = 0;
+    query2Elem * Q2 = query2(st, &qtyQ2);
+
+    htmlTable tableQ2 = newTable(QUERY2_TABLE_NAME, QUERY2_COLS, "StationA", "StationB", "Trips A->B", "Trips B->A");
+
+    FILE * csvQ2;
+    csvQ2 = fopen(QUERY2_CSV_NAME,"w");
+    checkFile(csvQ2);
+
+    fprintf(csvQ2, "%s;%s;%s;%s\n", "StationA", "StationB", "Trips A->B", "Trips B->A");
+    for(int i=0; i < qtyQ2; i++)
+    {
+        char * stringAtoB = sizeToString(Q2[i].AtoB);
+        char * stringBtoA = sizeToString(Q2[i].BtoA);
+        addHTMLRow(tableQ2, Q2[i].stationA, Q2[i].stationB, stringAtoB, stringBtoA);
+        fprintf(csvQ2, "%s;%s;%s;%s\n", Q2[i].stationA, Q2[i].stationB, stringAtoB, stringBtoA);
+        free(stringAtoB);
+        free(stringBtoA);
+    }
+
+    freeQuery2(Q2, qtyQ2);
+
+    closeHTMLTable(tableQ2);
+    fclose(csvQ2);
+
+    size_t qtyQ3 = 0; 
+    query3Elem * Q3 = query3(st, &qtyQ3);
+
+    htmlTable tableQ3 = newTable(QUERY3_TABLE_NAME, QUERY3_COLS, "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", "Station");
+
+    FILE * csvQ3;
+    csvQ3 = fopen(QUERY3_CSV_NAME, "w");
+    checkFile(csvQ3);
+
+    fprintf(csvQ3, "%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s\n", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", "Station");
+    for(int i = 0; i < qtyQ3; i++)
+    {
+       char * vec[MONTHS];
+       for(int j = 0; j < MONTHS; j++)
+       {
+        vec[j] = sizeToString(Q3[i].mv[j]);
+       }
+       addHTMLRow(tableQ3, vec[0], vec[1], vec[2], vec[3], vec[4], vec[5], vec[6], vec[7], vec[8], vec[9], vec[10], vec[11], Q3[i].name);
+       fprintf(csvQ3, "%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s\n", vec[0], vec[1], vec[2], vec[3], vec[4], vec[5], vec[6], vec[7], vec[8], vec[9], vec[10], vec[11], Q3[i].name);
+       for(int k=0; k < MONTHS; k++)
+       {
+        free(vec[k]);
+       }
+    }
+
+    freeQuery3(Q3,qtyQ3);
+
+    closeHTMLTable(tableQ3);
+    fclose(csvQ3);
     
 
     /* Fin del programa, se libera el ADT de estaciones */
