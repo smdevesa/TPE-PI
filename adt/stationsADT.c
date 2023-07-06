@@ -28,6 +28,7 @@ typedef struct station
 {
     size_t id; /* ID de la estacion */
     char * name; /* Nombre de la estacion */
+    size_t len; /* Dimension del string de la estacion */
     TRide * rides; /* Vector de rides que salieron desde la estacion */
     size_t memberRides; /* Cantidad de viajes hechos por miembros */
     size_t dim; /* Cantidad de rides que salieron desde la estacion */
@@ -60,7 +61,7 @@ static int checkMem(void * ptr, const char * message);
 ** en su nombre el vector que contiene el string.
 ** En caso de error de memoria imprime error y devuelve NULL.
  */
-static char * copyStr(const char * s);
+static char * copyStr(const char * s, size_t * len);
 
 /*
 ** Auxiliar que agrega una estacion a la lista recibida ordenandola por NOMBRE
@@ -85,7 +86,7 @@ static void addRideRec(TList list, size_t startId, size_t endId, int isMember, u
 ** no se pudo reservar memoria.
 ** IMPORTANTE: La funcion no chequea que no hayan repetidos.
  */
-query1List query1Add(query1List list, char * name, size_t startedTrips, int * flag);
+query1List query1Add(query1List list, char * name, size_t len, size_t startedTrips, int * flag);
 
 /*
 ** Devuelve la cantidad de viajes que encuentre en un vector de TRides
@@ -127,7 +128,7 @@ stationsADT newStationsADT(void)
     return new;
 }
 
-static char * copyStr(const char * s)
+static char * copyStr(const char * s, size_t * len)
 {
     char * ans = NULL;
     int i;
@@ -152,6 +153,7 @@ static char * copyStr(const char * s)
         return NULL;
     }
     ans[i] = 0;
+    *len = i;
     return ans;
 }
 
@@ -168,7 +170,7 @@ static TList addStationRec(TList list, size_t id, const char * name, int * flag)
             return list;
         }
         newNode->station.id = id;
-        newNode->station.name = copyStr(name);
+        newNode->station.name = copyStr(name, &newNode->station.len);
         if(newNode->station.name == NULL)
         {
             *flag = -1;
@@ -243,7 +245,7 @@ int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const ch
     return flag;
 }
 
-query1List query1Add(query1List list, char * name, size_t startedTrips, int * flag)
+query1List query1Add(query1List list, char * name, size_t len, size_t startedTrips, int * flag)
 {
     /* Ordenamos primero por startedTrips, luego alfabeticamente si empatan */
     if(list == NULL || list->startedTrips < startedTrips || (list->startedTrips == startedTrips && strcmp(name, list->name) < 0))
@@ -254,18 +256,19 @@ query1List query1Add(query1List list, char * name, size_t startedTrips, int * fl
             *flag = -1;
             return list;
         }
-        newNode->name = copyStr(name);
-        if(name == NULL)
+        newNode->name = malloc((len+1) * sizeof(char));
+        if(checkMem((void *)newNode->name, "ERROR: Memory cant be allocated.\n"))
         {
             *flag = -1;
             return list;
         }
+        strcpy(newNode->name, name);
         *flag = 1;
         newNode->startedTrips = startedTrips;
         newNode->tail = list;
         return newNode;
     }
-    list->tail = query1Add(list->tail, name, startedTrips, flag);
+    list->tail = query1Add(list->tail, name, len, startedTrips, flag);
     return list;
 }
 
@@ -276,7 +279,7 @@ query1List query1(stationsADT st, int * flag)
 
     while(it != NULL)
     {
-        ans = query1Add(ans, it->station.name, it->station.memberRides, flag);
+        ans = query1Add(ans, it->station.name, it->station.len, it->station.memberRides, flag);
         if(*flag == -1)
         {
             return ans;
@@ -312,59 +315,48 @@ static size_t tripsToStation(TRide vector[], size_t dim,  size_t id)
 
 query2Elem * query2(stationsADT st, int * qty)
 {
-    TList it1 = st->list;
-    TList it2;
-    size_t dim = 0;
-    size_t size = 0;
-    query2Elem * ans = NULL;
-
-    while(it1 != NULL)
-    {
-        it2 = st->list;
-        while(it2 != NULL)
-        {
-            if(it1->station.id != it2->station.id) /* No uso los viajes circulares */
-            {
-                if(dim == size)
-                {
-                    ans = realloc(ans, (size + QUERYBLOCK) * sizeof(query2Elem));
-                    if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
-                    {
-                        *qty = -1;
-                        return NULL;
-                    }
-                    size += QUERYBLOCK;
-                }
-                ans[dim].stationA = copyStr(it1->station.name);
-                if(ans[dim].stationA == NULL)
-                {
-                    *qty = -1;
-                    return ans;
-                }
-                ans[dim].stationB = copyStr(it2->station.name);
-                if(ans[dim].stationB == NULL)
-                {
-                    *qty = -1;
-                    return ans;
-                }
-                ans[dim].AtoB = tripsToStation(it1->station.rides, it1->station.dim, it2->station.id);
-                ans[dim].BtoA = tripsToStation(it2->station.rides, it2->station.dim, it1->station.id);
-                dim++;
-            }
-            it2 = it2->tail;
-        }
-        it1 = it1->tail;
-    }
-
-    /* Recortamos el vector para que ocupe solo lo que ocupo */
-    ans = realloc(ans, dim * sizeof(query2Elem));
+    query2Elem * ans = malloc(sizeof(query2Elem));
     if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
     {
         *qty = -1;
-        return NULL;
+        return ans;
     }
-    *qty = dim;
-    return ans;
+    
+    ans->trips = malloc(st->qty * sizeof(size_t *));
+    if(checkMem((void *)ans->trips, "ERROR: Memory cant be allocated.\n"))
+    {
+        *qty = -1;
+        return ans;
+    }
+    for(int i=0; i<st->qty; i++)
+    {
+        ans->trips[i] = malloc(st->qty * sizeof(size_t));
+        if(checkMem((void *)ans->trips[i], "ERROR: Memory cant be allocated.\n"))
+        {
+            *qty = -1;
+            return ans;
+        }
+    }
+
+    ans->names = malloc(st->qty * sizeof(char *));
+    TList it = st->list;
+
+    for(int i=0; it != NULL; i++, it=it->tail)
+    {
+        ans->names[i] = malloc((it->station.len + 1) * sizeof(char));
+        if(checkMem((void *)ans->names[i], "ERROR: Memory cant be allocated.\n"))
+        {
+            *qty = -1;
+            return ans;
+        }
+        strcpy(ans->names[i], it->station.name);
+    }
+
+    it = st->list;
+
+    for(int i=0)
+
+
 }
 
 void freeQuery2(query2Elem * vector, size_t qty)
@@ -387,47 +379,37 @@ static void getMonthsVec(size_t monthsVec[], TRide vector[], size_t dim)
 
 query3Elem * query3(stationsADT st, int * qty)
 {
-    size_t dim = 0;
-    size_t size = 0;
-    query3Elem * ans = NULL;
+    int i=0;
+    int elems = st->qty;
+    query3Elem * ans = malloc(elems * sizeof(query3Elem));
+    if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
+    {
+        *qty = -1;
+        return NULL;
+    }
     TList it = st->list;
 
     while(it != NULL)
     {
-        if(dim == size)
-        {
-            ans = realloc(ans, (size + QUERYBLOCK) * sizeof(query3Elem));
-            if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
-            {
-                *qty = -1;
-                return NULL;
-            }
-            size += QUERYBLOCK;
-        }
-        ans[dim].mv = calloc(MONTHS_QTY, sizeof(size_t));
-        if(checkMem((void *)ans[dim].mv, "ERROR: Memory cant be allocated.\n"))
+        ans[i].mv = calloc(MONTHS_QTY, sizeof(size_t));
+        if(checkMem((void *)ans[i].mv, "ERROR: Memory cant be allocated.\n"))
         {
             *qty = -1;
             return NULL;
         }
         /* Rellenamos el vector de months */
-        getMonthsVec(ans[dim].mv, it->station.rides, it->station.dim);
-        ans[dim].name = copyStr(it->station.name);
-        if(ans[dim].name == NULL)
+        getMonthsVec(ans[i].mv, it->station.rides, it->station.dim);
+        ans[i].name = malloc((it->station.len + 1) * sizeof(char));
+        if(checkMem((void *)ans[i].name, "ERROR: Memory cant be allocated.\n"))
         {
             *qty = -1;
-            return ans;
+            return NULL;
         }
-        dim++;
+        strcpy(ans[i].name, it->station.name);
+        i++;
         it = it->tail;
     }
-    /* Recortamos el vector para que ocupe solo lo que ocupo */
-    ans = realloc(ans, dim * sizeof(query3Elem));
-    if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
-    {
-        return NULL;
-    }
-    *qty = dim;
+    *qty = elems;
     return ans;
 }
 
