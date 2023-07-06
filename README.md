@@ -46,12 +46,12 @@ a table with the next thirteen fields:
   9. S (total trips started in September)
   10. O (total trips started in October)
   11. N (total trips started in November)
-  12.
-  13.
+  12. D (total trips started in December)
+  13. Station (name of the station)
 
 ## Installation and use
 
-##### - New York program:
+#### - New York program:
 
 - Compiling:
   `make nyc/bikeSharingNYC.out`
@@ -59,10 +59,47 @@ a table with the next thirteen fields:
 - Executing:
   `./nyc/bikeSharingNYC.out BIKESFILENAME.csv STATIONSFILENAME.csv`
 
-##### - Montreal program:
+The bikes.csv must have the following format:
+`started_at;start_station_id;ended_at;end_station_id;rideable_type;member_casual`
+
+- started_at = date and hour of the start of the rent in format yyyy-MM-dd HH:mm:ss (string)
+- start_station_id = id of the station where the rent started (integer)
+- ended_at = date and hour of the end of the rent in format yyyy-MM-dd HH:mm:ss (string)
+- end_station_id = id of the station where the rent ended (integer)
+- rideable_type = type of bike of the rent (string)
+- member_casual = "member" if the user was a member, "casual" if the user was a casual (string)
+
+The stations.csv must have the following format:
+`station_name;latitude;longitude;id`
+
+- station_name = name of the station (string)
+- latitude = latitude of the ubication of the station (double)
+- longitude = longitude of the ubication of the station (double)
+- id = id of the station (integer)
+
+#### - Montreal program:
 
 - Compiling:
   `make mon/bikeSharingMON.out`
 
 - Executing:
   `./mon/bikeSharingMON.out BIKESFILENAME.csv STATIONSFILENAME.csv`
+
+The bikes.csv must have the following format:
+`start_date;emplacement_pk_start;end_date;emplacement_pk_end;is_member`
+
+- start_date = date and hour of the start of the rent in format yyyy-MM-dd HH:mm:ss (string)
+- emplacement_pk_start = id of the station where the rent started (integer)
+- end_date = date and hour of the end of the rent in format yyyy-MM-dd HH:mm:ss (string)
+- emplacement_pk_end = id of the station where the rent ended (integer)
+- is_member = 1 if the user was a member, 0 if the user was a casual (integer)
+
+The stations.csv must have the following format:
+`pk;name;latitude;longitude`
+
+- pk = id of the station (integer)
+- name = name of the station (string)
+- latitude = latitude of the ubication of the station (double)
+- longitude = longitude of the ubication of the station (double)
+
+## 
