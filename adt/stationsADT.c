@@ -315,48 +315,52 @@ static size_t tripsToStation(TRide vector[], size_t dim,  size_t id)
 
 query2Elem * query2(stationsADT st, int * qty)
 {
-    query2Elem * ans = malloc(sizeof(query2Elem));
-    if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
+    TList it1 = st->list;
+    TList it2;
+    int i=0;
+    size_t elems = (st->qty * st->qty) - st->qty;
+    query2Elem * ans = malloc(elems * sizeof(query2Elem));
+    if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
     {
         *qty = -1;
-        return ans;
+        return NULL;
     }
-    
-    ans->trips = malloc(st->qty * sizeof(size_t *));
-    if(checkMem((void *)ans->trips, "ERROR: Memory cant be allocated.\n"))
+
+    while(it1 != NULL)
     {
-        *qty = -1;
-        return ans;
-    }
-    for(int i=0; i<st->qty; i++)
-    {
-        ans->trips[i] = malloc(st->qty * sizeof(size_t));
-        if(checkMem((void *)ans->trips[i], "ERROR: Memory cant be allocated.\n"))
+        it2 = st->list;
+        while(it2 != NULL)
         {
-            *qty = -1;
-            return ans;
+            if(it1->station.id != it2->station.id) /* No uso los viajes circulares */
+            {
+                ans[i].stationA = malloc((it1->station.len + 1) * sizeof(char));
+                if(checkMem(ans[i].stationA, "ERROR: Memory cant be allocated.\n"))
+                {
+                    *qty = -1;
+                    return ans;
+                }
+                strcpy(ans[i].stationA, it1->station.name);
+
+                ans[i].stationB = malloc((it2->station.len + 1) * sizeof(char));
+                if(checkMem(ans[i].stationB, "ERROR: Memory cant be allocated.\n"))
+                {
+                    *qty = -1;
+                    return ans;
+                }
+                strcpy(ans[i].stationB, it2->station.name);
+
+                ans[i].AtoB = tripsToStation(it1->station.rides, it1->station.dim, it2->station.id);
+                ans[i].BtoA = tripsToStation(it2->station.rides, it2->station.dim, it1->station.id);
+
+                i++;
+            }
+            it2 = it2->tail;
         }
+        it1 = it1->tail;
     }
 
-    ans->names = malloc(st->qty * sizeof(char *));
-    TList it = st->list;
-
-    for(int i=0; it != NULL; i++, it=it->tail)
-    {
-        ans->names[i] = malloc((it->station.len + 1) * sizeof(char));
-        if(checkMem((void *)ans->names[i], "ERROR: Memory cant be allocated.\n"))
-        {
-            *qty = -1;
-            return ans;
-        }
-        strcpy(ans->names[i], it->station.name);
-    }
-
-    it = st->list;
-
-    for(int i=0)
-
-
+    *qty = elems;
+    return ans;
 }
 
 void freeQuery2(query2Elem * vector, size_t qty)

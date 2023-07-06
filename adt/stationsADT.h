@@ -24,8 +24,10 @@ typedef struct query1Node * query1List;
 /* Estructura de los elementos del vector utilizado para devolver los datos solicitados en la query 2 */
 typedef struct query2Elem
 {
-    char ** names;
-    size_t ** trips;
+    char * stationA; /* Nombre de la estacion A */
+    char * stationB; /* Nombre de la estacion B */
+    size_t AtoB; /* Cantidad de viajes desde A hasta B */
+    size_t BtoA; /* Cantidad de viajes desde B hasta A */
 } query2Elem;
 
 /* Estructura de los elementos del vector utilizado para devolver los datos solicitados en la query 3 */

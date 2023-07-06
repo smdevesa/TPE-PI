@@ -73,6 +73,7 @@ int main(int argc, char ** argv)
         free(ans);
     }
     fclose(FStations);
+    puts("S1");
 
     /* Flag para cambiar la cadena de miembro a un numero 1/0 (por requisito del backend) */
     int isMember;
@@ -97,7 +98,8 @@ int main(int argc, char ** argv)
         free(ans);
     }
     fclose(FBikes);
-
+    puts("S2");
+    
     int flagQ1;
     query1List Q1 = query1(st, &flagQ1);
     query1List it = Q1; /* Iterador para la lista de la query 1 */
@@ -131,6 +133,7 @@ int main(int argc, char ** argv)
     freeQuery1(Q1);
     closeHTMLTable(tableQ1);
     fclose(csvQ1);
+    puts("Q1");
 
     int qtyQ2; /* Dimension del vector de la query 2 */
     query2Elem * Q2 = query2(st, &qtyQ2);
@@ -165,6 +168,7 @@ int main(int argc, char ** argv)
     freeQuery2(Q2, qtyQ2);
     closeHTMLTable(tableQ2);
     fclose(csvQ2);
+    puts("Q2");
 
     int qtyQ3; /* Dimension del vector de la query 3 */
     query3Elem * Q3 = query3(st, &qtyQ3);
@@ -211,6 +215,7 @@ int main(int argc, char ** argv)
     freeQuery3(Q3,qtyQ3);
     closeHTMLTable(tableQ3);
     fclose(csvQ3);
+    puts("Q3");
     
     freeStations(st);
     return 0;
