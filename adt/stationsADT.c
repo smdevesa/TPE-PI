@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <errno.h>
 
 #define COPYBLOCK 10
 #define BLOCK 5000
@@ -119,7 +118,7 @@ static int checkMem(void * ptr, const char * message)
 
 stationsADT newStationsADT(void)
 {
-    /* Se incializa en NULL la lista y qty en cero */
+    /* Se inicializa en NULL la lista y qty en cero */
     stationsADT new = calloc(1, sizeof(struct stationsCDT));
     if(checkMem((void *)new, "ERROR: Memory cant be allocated.\n"))
     {
@@ -193,6 +192,7 @@ int addStation(stationsADT st, size_t id, const char * name)
 {
     int flag = 0;
     st->list = addStationRec(st->list, id, name, &flag);
+    /* Aumento la cantidad solo en caso de que se haya podido agregar una estacion*/
     if(flag == 1)
     {
         st->qty++;
@@ -209,7 +209,6 @@ static void addRideRec(TList list, size_t startId, size_t endId, int isMember, u
     }
     if(list->station.id == startId)
     {
-        /* Agrandamos el vector de a bloques */
         if(list->station.dim == list->station.size)
         {
             list->station.rides = realloc(list->station.rides,sizeof(TRide) * (BLOCK + list->station.size));
@@ -274,15 +273,12 @@ query1List query1(stationsADT st, int * flag)
 {
     TList it = st->list;
     query1List ans = NULL;
-    int internFlag;
 
     while(it != NULL)
     {
-        internFlag = 0;
-        ans = query1Add(ans, it->station.name, it->station.memberRides, &internFlag);
-        if(internFlag == -1)
+        ans = query1Add(ans, it->station.name, it->station.memberRides, flag);
+        if(*flag == -1)
         {
-            *flag = -1;
             return ans;
         }
         it = it->tail;
@@ -304,7 +300,7 @@ void freeQuery1(query1List list)
 static size_t tripsToStation(TRide vector[], size_t dim,  size_t id)
 {
     size_t count = 0;
-    for(int i=0; i<dim; i++)
+    for(int i=0; i < dim; i++)
     {
         if(vector[i].endId == id)
         {
@@ -425,6 +421,7 @@ query3Elem * query3(stationsADT st, int * qty)
         dim++;
         it = it->tail;
     }
+    /* Recortamos el vector para que ocupe solo lo que ocupo */
     ans = realloc(ans, dim * sizeof(query3Elem));
     if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
     {
@@ -436,7 +433,7 @@ query3Elem * query3(stationsADT st, int * qty)
 
 void freeQuery3(query3Elem * vec, size_t qty)
 {
-    for(int i=0; i<qty; i++)
+    for(int i = 0; i < qty; i++)
     {
         free(vec[i].name);
         free(vec[i].mv);

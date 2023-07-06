@@ -68,7 +68,7 @@ char ** getField(char * line, int fields)
     char ** ans = malloc(fields * sizeof(char *));
     checkMem((void *) ans, "ERROR: Memory cant be allocated.\n");
 
-    /* Separamos el string */
+    /* Separamos el string y copiamos el primer campo*/
     ans[0] = copyStr(strtok(line, DELIM));  
     for(int i=1; i < fields; i++)
     {

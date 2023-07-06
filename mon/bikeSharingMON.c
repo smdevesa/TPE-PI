@@ -64,7 +64,7 @@ int main(int argc, char ** argv)
             exit(1);
         }
         /* Liberamos el espacio reservado por auxiliares */
-        for(int i=0; i < STATIONS_FIELDS; i++)
+        for(int i = 0; i < STATIONS_FIELDS; i++)
         {
             free(ans[i]);
         }
@@ -82,7 +82,7 @@ int main(int argc, char ** argv)
             fprintf(stderr, "ERROR: Memory cant be allocated.\n");
             exit(1);
         }
-        for(int i=0; i < BIKES_FIELDS; i++)
+        for(int i = 0; i < BIKES_FIELDS; i++)
         {
             free(ans[i]);
         }
@@ -141,7 +141,7 @@ int main(int argc, char ** argv)
 
     /* Campos del archivo CSV */
     fprintf(csvQ2, "%s;%s;%s;%s\n", "StationA", "StationB", "Trips A->B", "Trips B->A");
-    for(int i=0; i < qtyQ2; i++)
+    for(int i = 0; i < qtyQ2; i++)
     {
         char * stringAtoB = sizeToString(Q2[i].AtoB);
         char * stringBtoA = sizeToString(Q2[i].BtoA);
