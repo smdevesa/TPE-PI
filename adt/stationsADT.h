@@ -80,8 +80,11 @@ int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const ch
 ** @returns Una lista ordenada por cantidad de viajes de miembros
 **          y desempatada por nombre de estacion para cada una de
 **          las estaciones del ADT. Ver estructura query1List.
+**
+** @param flag Parametro de salida. Sera 1 si se completo correctamente
+**             la query, caso contrario sera -1.
  */
-query1List query1(stationsADT st);
+query1List query1(stationsADT st, int * flag);
 
 /*
 ** Libera la lista de tipo query1 que recibe como parametro.
@@ -96,9 +99,10 @@ void freeQuery1(query1List list);
 **
 **  @param st El stationsADT sobre el que se quiere hacer la consulta.
 **  @param qty Parametro de salida en el que se devuelve la dimension del vector.
+**             En caso de error de memoria qty sera -1.
 **
  */
-query2Elem * query2(stationsADT st, size_t * qty);
+query2Elem * query2(stationsADT st, int * qty);
 
 /*
 ** Libera el vector de query2Elem que recibe como parametro
@@ -112,8 +116,9 @@ void freeQuery2(query2Elem * vec, size_t qty);
 **
 **  @param st El stationsADT sobre el que se quiere hacer la consulta.
 **  @param qty Parametro de salida en el que se devuelve la dimension del vector.
+**             En caso de error de memoria qty sera -1.
  */
-query3Elem * query3(stationsADT st, size_t * qty);
+query3Elem * query3(stationsADT st, int * qty);
 
 /*
 ** Libera el vector de query3Elem que recibe como parametro

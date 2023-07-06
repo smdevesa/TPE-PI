@@ -1,3 +1,11 @@
+/*
+**  Autores: smdevesa y jrambau
+**  Version: 1.0
+**  Fecha: 05/07/2023
+**  
+**  Codigo fuente del ADT de estaciones.
+ */
+
 #include "stationsADT.h"
 #include <stdio.h>
 #include <string.h>
@@ -46,6 +54,59 @@ typedef struct stationsCDT
 ** si el puntero recibido es NULL imprime el mensaje recibido
 ** en stderr.
  */
+static int checkMem(void * ptr, const char * message);
+
+/*
+** Copia por bloques de tipo COPYBLOCK el string s y devuelve
+** en su nombre el vector que contiene el string.
+** En caso de error de memoria imprime error y devuelve NULL.
+ */
+static char * copyStr(const char * s);
+
+/*
+** Auxiliar que agrega una estacion a la lista recibida ordenandola por NOMBRE
+** de forma alfabetica. El flag queda en 0 si no se pudo agregar la estacion
+** (tiene el nombre repetido), sera 1 si se agrego correctamente o sera
+** -1 si no se pudo reservar memoria de manera correcta.
+ */
+static TList addStationRec(TList list, size_t id, const char * name, int * flag);
+
+/*
+** Funcion que busca la estacion de startId que recibe e ingresa un ride a su vector de
+** alquileres con el endId, isMember y month recibido.
+** El flag no se modifica si no se pudo agregar, sera 1 si se agrego o -1 si no se pudo
+** reservar memoria.
+ */
+static void addRideRec(TList list, size_t startId, size_t endId, int isMember, unsigned short month, int *flag);
+
+/*
+** Funcion que agrega un elemento a la lista de tipo query1
+** se ordenara segun startedTrips descendentemente y se desempata
+** por orden alfabetico. El flag sera 1 si se pudo agregar o -1 si
+** no se pudo reservar memoria.
+** IMPORTANTE: La funcion no chequea que no hayan repetidos.
+ */
+query1List query1Add(query1List list, char * name, size_t startedTrips, int * flag);
+
+/*
+** Devuelve la cantidad de viajes que encuentre en un vector de TRides
+** que terminen en la estacion de la id recibida.
+ */
+static size_t tripsToStation(TRide vector[], size_t dim,  size_t id);
+
+/*
+** Recibe un vector de TRides y su dimension y a partir de eso
+** rellena el monthsVec con las cantidades de viajes de cada mes
+** siendo el indice 0 ENERO, 1 FEBRERO y asi sucesivamente hasta
+** 11 DICIEMBRE.
+ */
+static void getMonthsVec(size_t monthsVec[], TRide vector[], size_t dim);
+
+/*
+** Libera la lista de tipo TList recibida.
+ */
+static void freeList(TList list);
+
 static int checkMem(void * ptr, const char * message)
 {
     if(ptr == NULL)
@@ -67,11 +128,6 @@ stationsADT newStationsADT(void)
     return new;
 }
 
-/*
-** Copia por bloques de tipo COPYBLOCK el string s y devuelve
-** en su nombre el vector que contiene el string.
-** En caso de error de memoria imprime error y devuelve NULL.
- */
 static char * copyStr(const char * s)
 {
     char * ans = NULL;
@@ -100,12 +156,6 @@ static char * copyStr(const char * s)
     return ans;
 }
 
-/*
-** Auxiliar que agrega una estacion a la lista recibida ordenandola por NOMBRE
-** de forma alfabetica. El flag queda en 0 si no se pudo agregar la estacion
-** (tiene el nombre repetido), sera 1 si se agrego correctamente o sera
-** -1 si no se pudo reservar memoria de manera correcta.
- */
 static TList addStationRec(TList list, size_t id, const char * name, int * flag)
 {
     int c; /* Guardamos en c la comparacion para no hacerla dos veces */
@@ -123,6 +173,7 @@ static TList addStationRec(TList list, size_t id, const char * name, int * flag)
         if(newNode->station.name == NULL)
         {
             *flag = -1;
+            return list;
         }
         *flag = 1;
         newNode->tail = list;
@@ -149,12 +200,6 @@ int addStation(stationsADT st, size_t id, const char * name)
     return flag;
 }
 
-/*
-** Funcion que busca la estacion de startId que recibe e ingresa un ride a su vector de
-** alquileres con el endId, isMember y month recibido.
-** El flag no se modifica si no se pudo agregar, sera 1 si se agrego o -1 si no se pudo
-** reservar memoria.
- */
 static void addRideRec(TList list, size_t startId, size_t endId, int isMember, unsigned short month, int *flag)
 {
     /* La estacion a la que se quiere agregar no existe */
@@ -199,13 +244,6 @@ int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const ch
     return flag;
 }
 
-/*
-** Funcion que agrega un elemento a la lista de tipo query1
-** se ordenara segun startedTrips descendentemente y se desempata
-** por orden alfabetico. El flag sera 1 si se pudo agregar o -1 si
-** no se pudo reservar memoria.
-** IMPORTANTE: La funcion no chequea que no hayan repetidos.
- */
 query1List query1Add(query1List list, char * name, size_t startedTrips, int * flag)
 {
     /* Ordenamos primero por startedTrips, luego alfabeticamente si empatan */
@@ -218,7 +256,6 @@ query1List query1Add(query1List list, char * name, size_t startedTrips, int * fl
             return list;
         }
         newNode->name = copyStr(name);
-        /* Chequeamos que el nombre se haya copiado bien */
         if(name == NULL)
         {
             *flag = -1;
@@ -233,22 +270,24 @@ query1List query1Add(query1List list, char * name, size_t startedTrips, int * fl
     return list;
 }
 
-query1List query1(stationsADT st)
+query1List query1(stationsADT st, int * flag)
 {
     TList it = st->list;
     query1List ans = NULL;
-    int flag;
+    int internFlag;
 
     while(it != NULL)
     {
-        flag = 0;
-        ans = query1Add(ans, it->station.name, it->station.memberRides, &flag);
-        if(flag == -1)
+        internFlag = 0;
+        ans = query1Add(ans, it->station.name, it->station.memberRides, &internFlag);
+        if(internFlag == -1)
         {
+            *flag = -1;
             return ans;
         }
         it = it->tail;
     }
+    *flag = 1;
     return ans;
 }
 
@@ -262,10 +301,6 @@ void freeQuery1(query1List list)
     free(list);
 }
 
-/*
-** Devuelve la cantidad de viajes que encuentre en un vector de TRides
-** que terminen en la estacion de la id recibida.
- */
 static size_t tripsToStation(TRide vector[], size_t dim,  size_t id)
 {
     size_t count = 0;
@@ -279,7 +314,7 @@ static size_t tripsToStation(TRide vector[], size_t dim,  size_t id)
     return count;
 }
 
-query2Elem * query2(stationsADT st, size_t * qty)
+query2Elem * query2(stationsADT st, int * qty)
 {
     TList it1 = st->list;
     TList it2;
@@ -299,12 +334,23 @@ query2Elem * query2(stationsADT st, size_t * qty)
                     ans = realloc(ans, (size + QUERYBLOCK) * sizeof(query2Elem));
                     if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
                     {
+                        *qty = -1;
                         return NULL;
                     }
                     size += QUERYBLOCK;
                 }
                 ans[dim].stationA = copyStr(it1->station.name);
+                if(ans[dim].stationA == NULL)
+                {
+                    *qty = -1;
+                    return ans;
+                }
                 ans[dim].stationB = copyStr(it2->station.name);
+                if(ans[dim].stationB == NULL)
+                {
+                    *qty = -1;
+                    return ans;
+                }
                 ans[dim].AtoB = tripsToStation(it1->station.rides, it1->station.dim, it2->station.id);
                 ans[dim].BtoA = tripsToStation(it2->station.rides, it2->station.dim, it1->station.id);
                 dim++;
@@ -318,6 +364,7 @@ query2Elem * query2(stationsADT st, size_t * qty)
     ans = realloc(ans, dim * sizeof(query2Elem));
     if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
     {
+        *qty = -1;
         return NULL;
     }
     *qty = dim;
@@ -334,12 +381,6 @@ void freeQuery2(query2Elem * vector, size_t qty)
     free(vector);
 }
 
-/*
-** Recibe un vector de TRides y su dimension y a partir de eso
-** rellena el monthsVec con las cantidades de viajes de cada mes
-** siendo el indice 0 ENERO, 1 FEBRERO y asi sucesivamente hasta
-** 11 DICIEMBRE.
- */
 static void getMonthsVec(size_t monthsVec[], TRide vector[], size_t dim)
 {
     for(int i=0; i<dim; i++)
@@ -348,7 +389,7 @@ static void getMonthsVec(size_t monthsVec[], TRide vector[], size_t dim)
     }
 }
 
-query3Elem * query3(stationsADT st, size_t * qty)
+query3Elem * query3(stationsADT st, int * qty)
 {
     size_t dim = 0;
     size_t size = 0;
@@ -360,16 +401,27 @@ query3Elem * query3(stationsADT st, size_t * qty)
         if(dim == size)
         {
             ans = realloc(ans, (size + QUERYBLOCK) * sizeof(query3Elem));
-            if(checkMem((void *)ans, "ERROR: Memory cant be allocated\n"))
+            if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
             {
+                *qty = -1;
                 return NULL;
             }
             size += QUERYBLOCK;
         }
         ans[dim].mv = calloc(MONTHS_QTY, sizeof(size_t));
+        if(checkMem((void *)ans[dim].mv, "ERROR: Memory cant be allocated.\n"))
+        {
+            *qty = -1;
+            return NULL;
+        }
         /* Rellenamos el vector de months */
         getMonthsVec(ans[dim].mv, it->station.rides, it->station.dim);
         ans[dim].name = copyStr(it->station.name);
+        if(ans[dim].name == NULL)
+        {
+            *qty = -1;
+            return ans;
+        }
         dim++;
         it = it->tail;
     }
@@ -392,10 +444,8 @@ void freeQuery3(query3Elem * vec, size_t qty)
     free(vec);
 }
 
-/*
-** Libera la lista de tipo TList recibida.
- */
-static void freeList(TList list){
+static void freeList(TList list)
+{
     if(list == NULL){
         return;
     }

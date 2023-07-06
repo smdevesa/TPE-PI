@@ -1,3 +1,11 @@
+/*
+**  Autores: smdevesa y jrambau
+**  Version: 1.0
+**  Fecha: 05/07/2023
+**  
+**  Codigo fuente del programa de leido de datos y realizacion de queries de Montreal.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,17 +48,15 @@ int main(int argc, char ** argv)
     fgets(line, MAXBUFFER, FBikes);
     fgets(line, MAXBUFFER, FStations);
 
-    /* ADT de control de sistema de estaciones */
     stationsADT st = newStationsADT();
 
     char ** ans;
     int flag=0;
 
-    /* Se lee linea por linea y se envia a la funcion de parseo para separar los campos */
+    /* Se lee linea por linea y se parsea para separar los campos */
     while(fgets(line,MAXBUFFER, FStations) != NULL)
     {
         ans = getField(line, STATIONS_FIELDS);
-        /* Se crean las estaciones */
         flag = addStation(st, atoi(ans[0]), ans[1]);
         if(flag == -1)
         {
@@ -64,10 +70,9 @@ int main(int argc, char ** argv)
         }
         free(ans);
     }
-    /* Cerramos el archivo, se lee una unica vez */
+
     fclose(FStations);
 
-    /* Se usa exactamente la misma logica con las estaciones pero para las rides */
     while(fgets(line,MAXBUFFER, FBikes) != NULL)
     {
         ans = getField(line, BIKES_FIELDS);
@@ -85,7 +90,14 @@ int main(int argc, char ** argv)
     }
     fclose(FBikes);
 
-    query1List Q1 = query1(st);
+    int flagQ1;
+    query1List Q1 = query1(st, &flagQ1);
+    
+    if(flagQ1 != 1)
+    {
+        fprintf(stderr, "ERROR: Cannot finish query 1. Aborting.\n");
+        exit(1);
+    }
     query1List it = Q1; /* Iterador para la lista */
     
     /* Creamos tabla HTML con los campos requeridos para la query 1 */
@@ -99,7 +111,6 @@ int main(int argc, char ** argv)
     fprintf(csvQ1, "%s;%s\n", "Station", "StartedTrips");
     while(it != NULL)
     {
-        /* Cargamos la misma informacion en la tabla y en el CSV */
         char * tripsString = sizeToString(it->startedTrips);
         addHTMLRow(tableQ1, it->name, tripsString);
         fprintf(csvQ1, "%s;%s\n", it->name, tripsString);
@@ -107,13 +118,18 @@ int main(int argc, char ** argv)
         it = it->tail;
     }
 
-    /* Cerramos los archivos y liberamos la lista */
     freeQuery1(Q1);
     closeHTMLTable(tableQ1);
     fclose(csvQ1);
 
-    size_t qtyQ2; /* Dimension del vector de la query 2 */
+    int qtyQ2; /* Dimension del vector de la query 2 */
     query2Elem * Q2 = query2(st, &qtyQ2);
+    
+    if(qtyQ2 < 0)
+    {
+        fprintf(stderr, "ERROR: Cannot finish query 2. Aborting.\n");
+        exit(1);
+    }
 
     /* Archivo HTML con los campos necesarios de la query 2 */
     htmlTable tableQ2 = newTable(QUERY2_TABLE_NAME, QUERY2_COLS, "StationA", "StationB", "Trips A->B", "Trips B->A");
@@ -127,7 +143,6 @@ int main(int argc, char ** argv)
     fprintf(csvQ2, "%s;%s;%s;%s\n", "StationA", "StationB", "Trips A->B", "Trips B->A");
     for(int i=0; i < qtyQ2; i++)
     {
-        /* Se cargan los datos en ambos archivos */
         char * stringAtoB = sizeToString(Q2[i].AtoB);
         char * stringBtoA = sizeToString(Q2[i].BtoA);
         addHTMLRow(tableQ2, Q2[i].stationA, Q2[i].stationB, stringAtoB, stringBtoA);
@@ -136,13 +151,18 @@ int main(int argc, char ** argv)
         free(stringBtoA);
     }
 
-    /* Liberamos espacio y cerramos los archivos */
     freeQuery2(Q2, qtyQ2);
     closeHTMLTable(tableQ2);
     fclose(csvQ2);
 
-    size_t qtyQ3;
+    int qtyQ3;
     query3Elem * Q3 = query3(st, &qtyQ3);
+
+    if(qtyQ3 < 0)
+    {
+        fprintf(stderr, "ERROR: Cannot finish query 3. Aborting.\n");
+        exit(1);
+    }
 
     /* Archivo HTML con los campos de la query3 */
     htmlTable tableQ3 = newTable(QUERY3_TABLE_NAME, QUERY3_COLS, "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", "Station");
@@ -176,7 +196,6 @@ int main(int argc, char ** argv)
         fprintf(csvQ3, "%s\n", Q3[i].name);
     }
 
-    /* Cerramos los archivos y liberamos la query 3 */
     freeQuery3(Q3,qtyQ3);
     closeHTMLTable(tableQ3);
     fclose(csvQ3);

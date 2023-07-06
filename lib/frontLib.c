@@ -1,3 +1,11 @@
+/*
+**  Autores: smdevesa y jrambau
+**  Version: 1.0
+**  Fecha: 05/07/2023
+**  
+**  Codigo fuente de la libreria de frontend para los programas de MON y NYC.
+ */
+
 #include "frontLib.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +19,15 @@
 ** Si el puntero recibido es nulo imprime el mensaje recibido
 ** y aborta en ejecucion.
  */
+static void checkMem(void * ptr, const char * message);
+
+/*
+** Copia por bloques el string recibido y devuelve en su
+** nombre la direccion de la copia. En caso de error de
+** memoria imprime error en stderr y devuelve NULL.
+ */
+static char * copyStr(const char * s);
+
 static void checkMem(void * ptr, const char * message)
 {
     if(ptr == NULL)
@@ -63,9 +80,11 @@ char ** getField(char * line, int fields)
 
 char * sizeToString(size_t num)
 {
-    int digits = num > 0 ? 0 : 1;
+    /* Si el numero es 0 tiene un digito */
+    int digits = (num == 0);
     size_t aux = num;
 
+    /* Contamos la cantidad de digitos */
     while(aux > 0)
     {
         digits++;
@@ -74,6 +93,7 @@ char * sizeToString(size_t num)
     char * ans = malloc((digits + 1) * sizeof(char));
     checkMem((void *) ans, "ERROR: Memory cant be allocated.\n");
 
+    /* Cargamos los numeros en el string al reves de como se reciben */
     for(int i=(digits-1); i>=0; i--)
     {
         ans[i] = num % 10 + '0';
