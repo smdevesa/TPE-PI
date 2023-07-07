@@ -1,58 +1,42 @@
 /*
-**  Autores: smdevesa y jrambau
-**  Version: 1.0
-**  Fecha: 05/07/2023
-**  
-**  Codigo fuente del ADT de estaciones.
+**
  */
 
 #include "stationsADT.h"
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 
-#define COPYBLOCK 10
-#define BLOCK 100
-#define QUERYBLOCK 50
+#define BIG_BLOCK 1000
+#define COPY_BLOCK 15
 
 #define MONTHS_QTY 12
 
-typedef struct ride
-{
-    size_t endId; /* ID de la estacion en la que finalizo el viaje */
-    size_t amount; /* Cantidad de viajes que van hasta esa ID */
-} TRide;
 
 typedef struct station
 {
-    size_t id; /* ID de la estacion */
-    char * name; /* Nombre de la estacion */
-    size_t len; /* Dimension del string de la estacion */
-    TRide * rides; /* Vector de rides que salieron desde la estacion */
-    size_t * monthsVec; /* Vector de viajes por meses del año (cantidades) */
-    size_t memberRides; /* Cantidad de viajes hechos por miembros */
-    size_t dim; /* Cantidad de rides que salieron desde la estacion */
-    size_t size; /* Espacio reservado en el vector de rides */
+    char * name;
+    size_t len; /* Longitud del string de nombre */
+    size_t monthsVec[MONTHS_QTY]; /* Vector de viajes segun meses del año */
+    size_t id;
+    size_t index; /* Indice interno de la matriz de adyacencia */
+    size_t memberTrips;
 } TStation;
-
-typedef struct node
-{
-    TStation station; /* Struct con todos los datos necesarios de la estacion */
-    struct node * tail;
-} TNode;
-
-typedef struct node * TList;
 
 typedef struct stationsCDT
 {
-    TList list; /* Lista de estaciones */
-    size_t qty; /* Cantidad de estaciones */
+    size_t ** matrix; /* Matriz cuadrada de cantidad de viajes */
+    TStation * stations; /* Vector dinamico de estaciones */
+    size_t dim; /* Cantidad de estaciones */
+    size_t size; /* Espacio reservado en el vector y en la matriz */
+    char sorted; /* Flag para saber si el vector de estaciones esta ordenado por nombre */
 } stationsCDT;
 
 /*
 ** Funcion para chequear si se reservo bien la memoria
-** si el puntero recibido es NULL imprime el mensaje recibido
-** en stderr.
+** si el puntero recibido es NULL o errno es ENOMEM
+** imprime el mensaje recibido en stderr.
  */
 static int checkMem(void * ptr, const char * message);
 
@@ -64,60 +48,35 @@ static int checkMem(void * ptr, const char * message);
 static char * copyStr(const char * s, size_t * len);
 
 /*
-** Auxiliar que agrega una estacion a la lista recibida ordenandola por NOMBRE
-** de forma alfabetica. El flag queda en 0 si no se pudo agregar la estacion
-** (tiene el nombre repetido), sera 1 si se agrego correctamente o sera
-** -1 si no se pudo reservar memoria de manera correcta.
+** Devuelve el indice en el que esta situado el ID que recibe
+** si no lo encuentra devuelve -1.
  */
-static TList addStationRec(TList list, size_t id, const char * name, int * flag);
+static int getIdx(TStation vector[], size_t dim, size_t id);
 
 /*
-** Funcion que busca la estacion de startId que recibe e ingresa un ride a su vector de
-** alquileres con el endId, isMember y month recibido.
-** El flag no se modifica si no se pudo agregar, sera 1 si se agrego o -1 si no se pudo
-** reservar memoria.
+** Devuelve la comparacion del nombre de dos estaciones.
+** Se adapta con punteros a void para utilizarla al hacer qsort.
  */
-static void addRideRec(TList list, size_t startId, size_t endId, int isMember, unsigned short month, int *flag);
+static int compareStationNames(const void * s1, const void * s2);
 
 /*
-** Funcion que agrega un elemento a la lista de tipo query1
-** se ordenara segun startedTrips descendentemente y se desempata
-** por orden alfabetico. El flag sera 1 si se pudo agregar o -1 si
-** no se pudo reservar memoria.
-** IMPORTANTE: La funcion no chequea que no hayan repetidos.
+** Ordena el vector de estaciones alfabeticamente.
  */
-query1List query1Add(query1List list, char * name, size_t len, size_t startedTrips, int * flag);
+static void sortByName(TStation vector[], size_t dim);
 
 /*
-** Devuelve la cantidad de viajes que encuentre en un vector de TRides
-** que terminen en la estacion de la id recibida.
+**
  */
-static size_t tripsToStation(TRide vector[], size_t dim,  size_t id);
-
-/*
-** Libera la lista de tipo TList recibida.
- */
-static void freeList(TList list);
+static query1List query1Add(query1List list, const char * name, size_t len, size_t startedTrips);
 
 static int checkMem(void * ptr, const char * message)
 {
-    if(ptr == NULL)
+    if(ptr == NULL || errno == ENOMEM)
     {
         fprintf(stderr, "%s", message);
         return 1;
     }
     return 0;
-}
-
-stationsADT newStationsADT(void)
-{
-    /* Se inicializa en NULL la lista y qty en cero */
-    stationsADT new = calloc(1, sizeof(struct stationsCDT));
-    if(checkMem((void *)new, "ERROR: Memory cant be allocated.\n"))
-    {
-        return NULL;
-    }
-    return new;
 }
 
 static char * copyStr(const char * s, size_t * len)
@@ -127,9 +86,10 @@ static char * copyStr(const char * s, size_t * len)
 
     for(i=0; s[i] != 0; i++)
     {
-        if(i % COPYBLOCK == 0)
+        if(i % COPY_BLOCK == 0)
         {
-            ans = realloc(ans, (COPYBLOCK+i) * sizeof(char));
+            errno = 0;
+            ans = realloc(ans, (COPY_BLOCK+i) * sizeof(char));
             if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
             {
                 return NULL;
@@ -139,6 +99,7 @@ static char * copyStr(const char * s, size_t * len)
     }
 
     /* Se recorta el string para que solo ocupe lo necesario. */
+    errno = 0;
     ans = realloc(ans, (i+1) * sizeof(char));
     if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
     {
@@ -149,186 +110,198 @@ static char * copyStr(const char * s, size_t * len)
     return ans;
 }
 
-static TList addStationRec(TList list, size_t id, const char * name, int * flag)
+stationsADT newStationsADT(void)
 {
-    int c; /* Guardamos en c la comparacion para no hacerla dos veces */
-    if(list == NULL || (c = strcmp(name, list->station.name)) < 0)
+    stationsADT new  = calloc(1, sizeof(struct stationsCDT));
+    errno = 0;
+    if(checkMem(new, "ERROR: Memory cant be allocated.\n"))
     {
-        /* Inicializamos rides y name en NULL y el resto de los campos en 0 */
-        TList newNode = calloc(1, sizeof(struct node));
-        if(checkMem((void *)newNode, "ERROR: Memory cant be allocated.\n"))
-        {
-            *flag = -1;
-            return list;
-        }
-        newNode->station.id = id;
-        newNode->station.name = copyStr(name, &newNode->station.len);
-        if(newNode->station.name == NULL)
-        {
-            *flag = -1;
-            return list;
-        }
-        newNode->station.monthsVec = calloc(MONTHS_QTY, sizeof(size_t));
-        if(newNode->station.monthsVec == NULL)
-        {
-            *flag = -1;
-            return list;
-        }
-        *flag = 1;
-        newNode->tail = list;
-        return newNode;
+        return NULL;
     }
-    /* La estacion estaba repetida */
-    if(c == 0)
-    {
-        return list;
-    }
-    list->tail = addStationRec(list->tail, id, name, flag);
-    return list;
+    return new;
 }
-
 
 int addStation(stationsADT st, size_t id, const char * name)
 {
-    int flag = 0;
-    st->list = addStationRec(st->list, id, name, &flag);
-    /* Aumento la cantidad solo en caso de que se haya podido agregar una estacion*/
-    if(flag == 1)
+    /* Si se agregan estaciones nuevas se asume que el vector de estaciones quedo desordenado */
+    st->sorted = 0;
+    /* No queda espacio para agregar una estacion */
+    if(st->dim == st->size)
     {
-        st->qty++;
+        /* Debo agrandar tanto la matriz como el vector pues usan el mismo size */
+        errno = 0;
+        st->stations = realloc(st->stations, (st->size + BIG_BLOCK) * sizeof(TStation));
+        if(checkMem(st->stations, "ERROR: Memory cant be allocated.\n"))
+        {
+            return -1;
+        }
+
+        /* Creamos una nueva matriz que satisfaga el nuevo tamaño */
+        errno = 0;
+        size_t ** newMatrix = malloc((st->size + BIG_BLOCK) * sizeof(size_t *));
+        if(checkMem(newMatrix, "ERROR: Memory cant be allocated.\n"))
+        {
+            return -1;
+        }
+
+        for(int i=0; i<(st->size + BIG_BLOCK); i++)
+        {
+            errno = 0;
+            newMatrix[i] = calloc((st->size + BIG_BLOCK), sizeof(size_t));
+            if(checkMem(newMatrix[i], "ERROR: Memory cant be allocated.\n"))
+            {
+                return -1;
+            }
+        }
+
+        /* Copiamos los viejos elementos */
+        for(int i=0; i<st->size; i++)
+        {
+            memcpy(newMatrix[i], st->matrix[i], st->size * sizeof(size_t));
+        }
+
+        /* Liberamos la vieja matriz */
+        for(int i=0; i<st->size; i++)
+        {
+            free(st->matrix[i]);
+        }
+        free(st->matrix);
+
+        /* Apuntamos a la nueva matriz */
+        st->matrix = newMatrix;
+        st->size += BIG_BLOCK;
     }
-    return flag;
+
+    /* Sabemos que hay espacio suficiente, agregamos la estacion */
+    st->stations[st->dim].id = id;
+    st->stations[st->dim].index = st->dim; /* Asignamos como indice interno el lugar donde lo guardamos */
+    st->stations[st->dim].memberTrips = 0;
+    
+    /* Inicializamos su vector de meses */
+    for(int i=0; i<MONTHS_QTY; i++)
+    {
+        st->stations[st->dim].monthsVec[i] = 0;
+    }
+
+    errno = 0;
+    st->stations[st->dim].name = copyStr(name, &st->stations[st->dim].len);
+    if(checkMem(st->stations[st->dim].name, "ERROR: Memory cant be allocated.\n"))
+    {
+        return -1;
+    }
+    st->dim++;
+    return 1;
 }
 
-static void addRideRec(TList list, size_t startId, size_t endId, int isMember, unsigned short month, int *flag)
+static int getIdx(TStation vector[], size_t dim, size_t id)
 {
-    /* La estacion a la que se quiere agregar no existe */
-    if(list == NULL)
+    for(int i=0; i<dim; i++)
     {
-        return;
-    }
-    if(list->station.id == startId)
-    {
-        /* Lo busco en el vector de ids */
-        for(int i=0; i<list->station.dim; i++)
+        if(vector[i].id == id)
         {
-            if(list->station.rides[i].endId == endId)
-            {
-                list->station.rides[i].amount++;
-                list->station.monthsVec[month - 1]++;
-                list->station.memberRides += (isMember == 1);
-                *flag = 1;
-                return;
-            }
+            return vector[i].index;
         }
-        /* Si no lo encontre tengo que agregarlo */
-        if(list->station.dim == list->station.size)
-        {
-            list->station.rides = realloc(list->station.rides,sizeof(TRide) * (BLOCK + list->station.size));
-            if(checkMem((void *)list->station.rides, "ERROR: Memory cant be allocated.\n"))
-            {
-                *flag = -1;
-                return;
-            }
-            list->station.size += BLOCK;
-        }
-        list->station.rides[list->station.dim].endId = endId;
-        list->station.memberRides += (isMember == 1);
-        list->station.monthsVec[month - 1]++;
-        list->station.rides[list->station.dim].amount = 1; /* Primer viaje a esa ID */
-        list->station.dim++;
-        *flag = 1;
-        return;
     }
-    addRideRec(list->tail, startId, endId, isMember, month, flag);
+    return -1;
 }
 
 int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const char * startDate)
 {
-    if(isMember != 0 && isMember != 1)
+    int startIdx, endIdx; /* Indices internos de viaje de ida y de vuelta */
+
+    /* Chequeamos que las estaciones de inicio y fin existan */
+    startIdx = getIdx(st->stations, st->dim, startId);
+    if(startIdx == -1)
     {
-        fprintf(stderr, "ERROR: isMember must be 1 or 0.\n");
-        return -1;
+        return 0;
     }
-    int flag = 0;
-    unsigned short month = atoi(startDate + 5); /* Extraemos el mes del formato de fecha enviado */
-    addRideRec(st->list, startId, endId, isMember, month, &flag);
-    return flag;
+
+    endIdx = getIdx(st->stations, st->dim, endId);
+    if(endIdx == -1)
+    {
+        return 0;
+    }
+
+    st->matrix[startIdx][endIdx]++; /* Se agrega un viaje desde startIdx hasta endIdx */
+    st->stations[startIdx].memberTrips += (isMember == 1);
+    st->stations[startIdx].monthsVec[atoi(startDate + 5) - 1]++; /* Agregamos un viaje al mes correspondiente */
+    return 1;
 }
 
-query1List query1Add(query1List list, char * name, size_t len, size_t startedTrips, int * flag)
+static int compareStationNames(const void * s1, const void * s2)
 {
-    /* Ordenamos primero por startedTrips, luego alfabeticamente si empatan */
-    if(list == NULL || list->startedTrips < startedTrips || (list->startedTrips == startedTrips && strcmp(name, list->name) < 0))
+    const TStation * station1 = (const TStation *) s1;
+    const TStation * station2 = (const TStation *) s2;
+
+    return strcmp(station1->name, station2->name);
+}
+
+static void sortByName(TStation vector[], size_t dim)
+{
+    qsort(vector, dim, sizeof(TStation), compareStationNames);
+}
+
+static query1List query1Add(query1List list, const char * name, size_t len, size_t startedTrips)
+{
+    if(list == NULL || startedTrips > list->startedTrips || (list->startedTrips == startedTrips && strcmp(name, list->name) < 0))
     {
+        errno = 0;
         query1List newNode = malloc(sizeof(struct query1Node));
-        if(checkMem((void *)newNode, "ERROR: Memory cant be allocated.\n"))
+        if(checkMem(newNode, "ERROR: Memory cant be allocated.\n"))
         {
-            *flag = -1;
-            return list;
+            return NULL;
         }
-        newNode->name = malloc((len+1) * sizeof(char));
-        if(checkMem((void *)newNode->name, "ERROR: Memory cant be allocated.\n"))
-        {
-            *flag = -1;
-            return list;
-        }
-        strcpy(newNode->name, name);
-        *flag = 1;
         newNode->startedTrips = startedTrips;
+        
+        errno = 0;
+        newNode->name = malloc((len + 1) * sizeof(char));
+        if(checkMem(newNode, "ERROR: Memory cant be allocated.\n"))
+        {
+            return NULL;
+        }
+        
+        strcpy(newNode->name, name);
+        
         newNode->tail = list;
         return newNode;
     }
-    list->tail = query1Add(list->tail, name, len, startedTrips, flag);
+    list->tail = query1Add(list->tail, name, len, startedTrips);
     return list;
 }
 
 query1List query1(stationsADT st, int * flag)
 {
-    TList it = st->list;
+    /* Inicializamos la lista vacia para devolver */
     query1List ans = NULL;
 
-    while(it != NULL)
+    for(int i=0; i<st->dim; i++)
     {
-        ans = query1Add(ans, it->station.name, it->station.len, it->station.memberRides, flag);
-        if(*flag == -1)
+        ans = query1Add(ans, st->stations[i].name, st->stations[i].len, st->stations[i].memberTrips);
+        if(ans == NULL)
         {
-            return ans;
+            *flag = -1;
+            return NULL;
         }
-        it = it->tail;
     }
+
     *flag = 1;
     return ans;
 }
 
-void freeQuery1(query1List list)
-{
-    if(list == NULL)
-        return;
-    
-    freeQuery1(list->tail);
-    free(list->name);
-    free(list);
-}
-
-static size_t tripsToStation(TRide vector[], size_t dim,  size_t id)
-{
-    for(int i=0; i<dim; i++)
-    {
-        if(vector[i].endId == id)
-        {
-            return vector[i].amount;
-        }
-    }
-    return 0;
-}
-
 query2Elem * query2(stationsADT st, int * qty)
 {
-    TList it1 = st->list;
-    TList it2;
-    int i=0;
-    size_t elems = (st->qty * st->qty) - st->qty;
+    /* Si el vector no estaba ordenado por nombre lo ordenamos por comodidad */
+    if(st->sorted == 0)
+    {
+        sortByName(st->stations, st->dim);
+        st->sorted = 1;
+    }
+
+    /* La cantidad de elementos sera la misma que una matriz cuadrada pero sin la diagonal */
+    size_t elems = (st->dim * st->dim) - st->dim;
+    int k = 0; /* Indice para guardar los elementos en el vector */
+
+    errno = 0;
     query2Elem * ans = malloc(elems * sizeof(query2Elem));
     if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
     {
@@ -336,95 +309,119 @@ query2Elem * query2(stationsADT st, int * qty)
         return NULL;
     }
 
-    while(it1 != NULL)
+    for(int i=0; i<st->dim; i++)
     {
-        it2 = st->list;
-        while(it2 != NULL)
+        for(int j=0; j<st->dim; j++)
         {
-            if(it1->station.id != it2->station.id) /* No uso los viajes circulares */
+            if(st->stations[i].id != st->stations[j].id) /* Descartamos viajes circulares */
             {
-                ans[i].stationA = malloc((it1->station.len + 1) * sizeof(char));
-                if(checkMem(ans[i].stationA, "ERROR: Memory cant be allocated.\n"))
+                errno = 0;
+                ans[k].stationA = malloc((st->stations[i].len + 1) * sizeof(char));
+                if(checkMem(ans[k].stationA, "ERROR: Memory cant be allocated.\n"))
                 {
                     *qty = -1;
-                    return ans;
+                    return NULL;
                 }
-                strcpy(ans[i].stationA, it1->station.name);
+                strcpy(ans[k].stationA, st->stations[i].name);
 
-                ans[i].stationB = malloc((it2->station.len + 1) * sizeof(char));
-                if(checkMem(ans[i].stationB, "ERROR: Memory cant be allocated.\n"))
+                errno = 0;
+                ans[k].stationB = malloc((st->stations[j].len + 1) * sizeof(char));
+                if(checkMem(ans[k].stationB, "ERROR: Memory cant be allocated.\n"))
                 {
                     *qty = -1;
-                    return ans;
+                    return NULL;
                 }
-                strcpy(ans[i].stationB, it2->station.name);
+                strcpy(ans[k].stationB, st->stations[j].name);
 
-                ans[i].AtoB = tripsToStation(it1->station.rides, it1->station.dim, it2->station.id);
-                ans[i].BtoA = tripsToStation(it2->station.rides, it2->station.dim, it1->station.id);
-
-                i++;
+                ans[k].AtoB = st->matrix[st->stations[i].index][st->stations[j].index];
+                ans[k].BtoA = st->matrix[st->stations[j].index][st->stations[i].index];
+                k++;
             }
-            it2 = it2->tail;
         }
-        it1 = it1->tail;
     }
 
-    *qty = elems;
+    *qty = k;
     return ans;
-}
-
-void freeQuery2(query2Elem * vector, size_t qty)
-{
-    for(int i=0; i < qty ; i++)
-    {
-        free(vector[i].stationA);
-        free(vector[i].stationB);
-    }
-    free(vector);
 }
 
 query3Elem * query3(stationsADT st, int * qty)
 {
-    int i=0;
-    int elems = st->qty;
+    /* Si el vector no estaba ordenado por nombre lo ordenamos por comodidad */
+    if(st->sorted == 0)
+    {
+        sortByName(st->stations, st->dim);
+        st->sorted = 1;
+    }
+
+    /* La cantidad de elementos sera la misma que la cantidad de estaciones */
+    size_t elems = st->dim;
+
+    errno = 0;
     query3Elem * ans = malloc(elems * sizeof(query3Elem));
-    if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
+    if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
     {
         *qty = -1;
         return NULL;
     }
-    TList it = st->list;
 
-    while(it != NULL)
+    int k = 0; /* Indice para guardar los elementos en el vector */
+
+    for(int i=0; i<st->dim; i++)
     {
-        ans[i].mv = malloc(MONTHS_QTY * sizeof(size_t));
-        if(checkMem((void *)ans[i].mv, "ERROR: Memory cant be allocated.\n"))
+        errno = 0;
+        ans[k].name = malloc((st->stations[i].len + 1) * sizeof(char));
+        if(checkMem(ans[k].name, "ERROR: Memory cant be allocated.\n"))
         {
             *qty = -1;
             return NULL;
         }
-        /* Rellenamos el vector de months */
+        strcpy(ans[k].name, st->stations[i].name);
+
+        errno = 0;
+        ans[k].mv = malloc(MONTHS_QTY * sizeof(size_t));
+        if(checkMem(ans[k].mv, "ERROR: Memory cant be allocated.\n"))
+        {
+            *qty = -1;
+            return NULL;
+        }
+
         for(int j=0; j<MONTHS_QTY; j++)
         {
-            ans[i].mv[j] = it->station.monthsVec[j];
+            ans[k].mv[j] = st->stations[i].monthsVec[j];
         }
-        ans[i].name = malloc((it->station.len + 1) * sizeof(char));
-        if(checkMem((void *)ans[i].name, "ERROR: Memory cant be allocated.\n"))
-        {
-            *qty = -1;
-            return NULL;
-        }
-        strcpy(ans[i].name, it->station.name);
-        i++;
-        it = it->tail;
+
+        k++;
     }
-    *qty = elems;
+
+    *qty = k;
     return ans;
+}
+
+void freeQuery1(query1List list)
+{
+    if(list == NULL)
+    {
+        return;
+    }
+
+    freeQuery1(list->tail);
+    free(list->name);
+    free(list);
+}
+
+void freeQuery2(query2Elem * vec, size_t qty)
+{
+    for(int i=0; i<qty; i++)
+    {
+        free(vec[i].stationA);
+        free(vec[i].stationB);
+    }
+    free(vec);
 }
 
 void freeQuery3(query3Elem * vec, size_t qty)
 {
-    for(int i = 0; i < qty; i++)
+    for(int i=0; i<qty; i++)
     {
         free(vec[i].name);
         free(vec[i].mv);
@@ -432,20 +429,15 @@ void freeQuery3(query3Elem * vec, size_t qty)
     free(vec);
 }
 
-static void freeList(TList list)
-{
-    if(list == NULL){
-        return;
-    }
-    freeList(list->tail);
-    free(list->station.rides);
-    free(list->station.name);
-    free(list->station.monthsVec);
-    free(list);
-}
-
 void freeStations(stationsADT st)
 {
-    freeList(st->list);
+    free(st->stations);
+    
+    for(int i=0; i<st->size; i++)
+    {
+        free(st->matrix[i]);
+    }
+    free(st->matrix);
+
     free(st);
 }
