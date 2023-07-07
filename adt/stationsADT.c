@@ -431,6 +431,10 @@ void freeQuery3(query3Elem * vec, size_t qty)
 
 void freeStations(stationsADT st)
 {
+    for(int i=0; i<st->dim; i++)
+    {
+        free(st->stations[i].name);
+    }
     free(st->stations);
     
     for(int i=0; i<st->size; i++)
