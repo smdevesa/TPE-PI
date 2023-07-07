@@ -72,6 +72,7 @@ int main(int argc, char ** argv)
     }
 
     fclose(FStations);
+    puts("Stations");
 
     while(fgets(line,MAXBUFFER, FBikes) != NULL)
     {
@@ -89,6 +90,7 @@ int main(int argc, char ** argv)
         free(ans);
     }
     fclose(FBikes);
+    puts("Bikes");
 
     int flagQ1;
     query1List Q1 = query1(st, &flagQ1);
@@ -121,6 +123,7 @@ int main(int argc, char ** argv)
     freeQuery1(Q1);
     closeHTMLTable(tableQ1);
     fclose(csvQ1);
+    puts("Q1");
 
     int qtyQ2; /* Dimension del vector de la query 2 */
     query2Elem * Q2 = query2(st, &qtyQ2);
@@ -154,6 +157,7 @@ int main(int argc, char ** argv)
     freeQuery2(Q2, qtyQ2);
     closeHTMLTable(tableQ2);
     fclose(csvQ2);
+    puts("Q2");
 
     int qtyQ3;
     query3Elem * Q3 = query3(st, &qtyQ3);
@@ -199,6 +203,7 @@ int main(int argc, char ** argv)
     freeQuery3(Q3,qtyQ3);
     closeHTMLTable(tableQ3);
     fclose(csvQ3);
+    puts("Q3");
     
 
     /* Fin del programa, se libera el ADT de estaciones */

@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 #define COPYBLOCK 10
-#define BLOCK 5000
+#define BLOCK 100
 #define QUERYBLOCK 50
 
 #define MONTHS_QTY 12
@@ -20,8 +20,7 @@
 typedef struct ride
 {
     size_t endId; /* ID de la estacion en la que finalizo el viaje */
-    unsigned short startMonth; /* Mes en el que se empezo el viaje */
-    int isMember; /* Flag de si el usuario de la bicicleta era o no miembro */
+    size_t amount; /* Cantidad de viajes que van hasta esa ID */
 } TRide;
 
 typedef struct station
@@ -30,6 +29,7 @@ typedef struct station
     char * name; /* Nombre de la estacion */
     size_t len; /* Dimension del string de la estacion */
     TRide * rides; /* Vector de rides que salieron desde la estacion */
+    size_t * monthsVec; /* Vector de viajes por meses del año (cantidades) */
     size_t memberRides; /* Cantidad de viajes hechos por miembros */
     size_t dim; /* Cantidad de rides que salieron desde la estacion */
     size_t size; /* Espacio reservado en el vector de rides */
@@ -93,14 +93,6 @@ query1List query1Add(query1List list, char * name, size_t len, size_t startedTri
 ** que terminen en la estacion de la id recibida.
  */
 static size_t tripsToStation(TRide vector[], size_t dim,  size_t id);
-
-/*
-** Recibe un vector de TRides y su dimension y a partir de eso
-** rellena el monthsVec con las cantidades de viajes de cada mes
-** siendo el indice 0 ENERO, 1 FEBRERO y asi sucesivamente hasta
-** 11 DICIEMBRE.
- */
-static void getMonthsVec(size_t monthsVec[], TRide vector[], size_t dim);
 
 /*
 ** Libera la lista de tipo TList recibida.
@@ -176,6 +168,12 @@ static TList addStationRec(TList list, size_t id, const char * name, int * flag)
             *flag = -1;
             return list;
         }
+        newNode->station.monthsVec = calloc(MONTHS_QTY, sizeof(size_t));
+        if(newNode->station.monthsVec == NULL)
+        {
+            *flag = -1;
+            return list;
+        }
         *flag = 1;
         newNode->tail = list;
         return newNode;
@@ -211,6 +209,19 @@ static void addRideRec(TList list, size_t startId, size_t endId, int isMember, u
     }
     if(list->station.id == startId)
     {
+        /* Lo busco en el vector de ids */
+        for(int i=0; i<list->station.dim; i++)
+        {
+            if(list->station.rides[i].endId == endId)
+            {
+                list->station.rides[i].amount++;
+                list->station.monthsVec[month - 1]++;
+                list->station.memberRides += (isMember == 1);
+                *flag = 1;
+                return;
+            }
+        }
+        /* Si no lo encontre tengo que agregarlo */
         if(list->station.dim == list->station.size)
         {
             list->station.rides = realloc(list->station.rides,sizeof(TRide) * (BLOCK + list->station.size));
@@ -222,14 +233,14 @@ static void addRideRec(TList list, size_t startId, size_t endId, int isMember, u
             list->station.size += BLOCK;
         }
         list->station.rides[list->station.dim].endId = endId;
-        list->station.rides[list->station.dim].isMember = isMember;
-        list->station.rides[list->station.dim].startMonth = month;
-        list->station.dim += 1;
-        list->station.memberRides += isMember;
+        list->station.memberRides += (isMember == 1);
+        list->station.monthsVec[month - 1]++;
+        list->station.rides[list->station.dim].amount = 1; /* Primer viaje a esa ID */
+        list->station.dim++;
         *flag = 1;
         return;
     }
-    addRideRec(list->tail,startId,endId,isMember,month,flag);
+    addRideRec(list->tail, startId, endId, isMember, month, flag);
 }
 
 int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const char * startDate)
@@ -302,15 +313,14 @@ void freeQuery1(query1List list)
 
 static size_t tripsToStation(TRide vector[], size_t dim,  size_t id)
 {
-    size_t count = 0;
-    for(int i=0; i < dim; i++)
+    for(int i=0; i<dim; i++)
     {
         if(vector[i].endId == id)
         {
-            count++;
+            return vector[i].amount;
         }
     }
-    return count;
+    return 0;
 }
 
 query2Elem * query2(stationsADT st, int * qty)
@@ -373,14 +383,6 @@ void freeQuery2(query2Elem * vector, size_t qty)
     free(vector);
 }
 
-static void getMonthsVec(size_t monthsVec[], TRide vector[], size_t dim)
-{
-    for(int i=0; i<dim; i++)
-    {
-        monthsVec[vector[i].startMonth - 1] += 1;
-    }
-}
-
 query3Elem * query3(stationsADT st, int * qty)
 {
     int i=0;
@@ -395,14 +397,17 @@ query3Elem * query3(stationsADT st, int * qty)
 
     while(it != NULL)
     {
-        ans[i].mv = calloc(MONTHS_QTY, sizeof(size_t));
+        ans[i].mv = malloc(MONTHS_QTY * sizeof(size_t));
         if(checkMem((void *)ans[i].mv, "ERROR: Memory cant be allocated.\n"))
         {
             *qty = -1;
             return NULL;
         }
         /* Rellenamos el vector de months */
-        getMonthsVec(ans[i].mv, it->station.rides, it->station.dim);
+        for(int j=0; j<MONTHS_QTY; j++)
+        {
+            ans[i].mv[j] = it->station.monthsVec[j];
+        }
         ans[i].name = malloc((it->station.len + 1) * sizeof(char));
         if(checkMem((void *)ans[i].name, "ERROR: Memory cant be allocated.\n"))
         {
