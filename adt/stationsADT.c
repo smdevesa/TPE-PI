@@ -440,6 +440,7 @@ static void freeList(TList list)
     freeList(list->tail);
     free(list->station.rides);
     free(list->station.name);
+    free(list->station.monthsVec);
     free(list);
 }
 
