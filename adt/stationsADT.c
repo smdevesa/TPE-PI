@@ -1,5 +1,9 @@
 /*
+** Autores: sdevesa y jrambau
+** Version: 1.1
+** Fecha: 09/07/2023
 **
+** Codigo fuente del ADT de estaciones para cargar datos y realizar consultas.
  */
 
 #include "stationsADT.h"
@@ -16,10 +20,10 @@
 
 typedef struct station
 {
-    char * name;
+    char * name; /* Nombre de la estacion */
     size_t len; /* Longitud del string de nombre */
     size_t monthsVec[MONTHS_QTY]; /* Vector de viajes segun meses del año */
-    size_t id;
+    size_t id; /* */
     size_t index; /* Indice interno de la matriz de adyacencia */
     size_t memberTrips;
 } TStation;
@@ -55,7 +59,7 @@ static char * copyStr(const char * s, size_t * len);
 ** Devuelve el indice en el que esta situado el ID que recibe
 ** si no lo encuentra devuelve -1.
  */
-static int getIdx(TStation vector[], size_t dim, size_t id);
+static int getIdx(TStation vector[], size_t dim, size_t id, size_t * pos);
 
 /*
 ** Devuelve la comparacion del nombre de dos estaciones.
@@ -211,7 +215,7 @@ static int compareStationId(const void * s1, const void * s2)
     return (int)station1->id - (int)station2->id;
 }
 
-static int getIdx(TStation vector[], size_t dim, size_t id)
+static int getIdx(TStation vector[], size_t dim, size_t id, size_t * pos)
 {
     /* Creamos una key auxiliar con el id que estamos buscando */
     TStation * key = malloc(sizeof(TStation));
@@ -229,6 +233,8 @@ static int getIdx(TStation vector[], size_t dim, size_t id)
     }
     else
     {
+        /* Guardamos en pos la posicion del vector en la que se encontro el ID buscado */
+        *pos = ans - vector;
         /* Devolvemos el indice del elemento en la matriz */
         return ans->index;
     }
@@ -246,23 +252,24 @@ int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const ch
     }
 
     int startIdx, endIdx; /* Indices internos de viaje de ida y de vuelta */
+    size_t startPos, endPos; /* Posicion de las estaciones en el vector luego de reordenarlos por ID */
 
     /* Chequeamos que las estaciones de inicio y fin existan */
-    startIdx = getIdx(st->stations, st->dim, startId);
+    startIdx = getIdx(st->stations, st->dim, startId, &startPos);
     if(startIdx == -1)
     {
         return 0;
     }
 
-    endIdx = getIdx(st->stations, st->dim, endId);
+    endIdx = getIdx(st->stations, st->dim, endId, &endPos);
     if(endIdx == -1)
     {
         return 0;
     }
 
     st->matrix[startIdx][endIdx]++; /* Se agrega un viaje desde startIdx hasta endIdx */
-    st->stations[startIdx].memberTrips += (isMember == 1);
-    st->stations[startIdx].monthsVec[atoi(startDate + 5) - 1]++; /* Agregamos un viaje al mes correspondiente */
+    st->stations[startPos].memberTrips += (isMember == 1);
+    st->stations[startPos].monthsVec[atoi(startDate + 5) - 1]++; /* Agregamos un viaje al mes correspondiente */
     return 1;
 }
 
