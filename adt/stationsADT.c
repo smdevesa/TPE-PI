@@ -30,8 +30,12 @@ typedef struct stationsCDT
     TStation * stations; /* Vector dinamico de estaciones */
     size_t dim; /* Cantidad de estaciones */
     size_t size; /* Espacio reservado en el vector y en la matriz */
-    char sorted; /* Flag para saber si el vector de estaciones esta ordenado por nombre */
+    char sortedName; /* Flag para saber si el vector de estaciones esta ordenado por nombre */
+    char sortedId; /* Flag para saber si el vector de estaciones esta ordenado por ID */
 } stationsCDT;
+
+/* Funcion de comparacion general para hacer sorting */
+typedef int(*TCompare)(const void *, const void *);
 
 /*
 ** Funcion para chequear si se reservo bien la memoria
@@ -62,7 +66,12 @@ static int compareStationNames(const void * s1, const void * s2);
 /*
 ** Ordena el vector de estaciones alfabeticamente.
  */
-static void sortByName(TStation vector[], size_t dim);
+static void sortBy(TStation vector[], size_t dim, TCompare f);
+
+/*
+**
+ */
+static int compareStationId(const void * s1, const void * s2);
 
 /*
 **
@@ -124,7 +133,7 @@ stationsADT newStationsADT(void)
 int addStation(stationsADT st, size_t id, const char * name)
 {
     /* Si se agregan estaciones nuevas se asume que el vector de estaciones quedo desordenado */
-    st->sorted = 0;
+    st->sortedName = 0;
     /* No queda espacio para agregar una estacion */
     if(st->dim == st->size)
     {
@@ -193,20 +202,49 @@ int addStation(stationsADT st, size_t id, const char * name)
     return 1;
 }
 
+static int compareStationId(const void * s1, const void * s2)
+{
+    const TStation * station1 = (const TStation *)s1;
+    const TStation * station2 = (const TStation *)s2;
+
+    /* Evitamos errores por el tipo de dato size_t */
+    return (int)station1->id - (int)station2->id;
+}
+
 static int getIdx(TStation vector[], size_t dim, size_t id)
 {
-    for(int i=0; i<dim; i++)
+    /* Creamos una key auxiliar con el id que estamos buscando */
+    TStation * key = malloc(sizeof(TStation));
+    key->id = id;
+
+    /* Aprovechamos el orden del vector para aplicar busqueda binaria */
+    TStation * ans = bsearch(key, vector, dim, sizeof(TStation), compareStationId);
+
+    /*Liberamos el espacio auxiliar */
+    free(key);
+
+    if(ans == NULL)
     {
-        if(vector[i].id == id)
-        {
-            return vector[i].index;
-        }
+        return -1;
     }
-    return -1;
+    else
+    {
+        /* Devolvemos el indice del elemento en la matriz */
+        return ans->index;
+    }
 }
 
 int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const char * startDate)
 {
+    /* Si el vector no esta ordenado lo ordenamos por nombre */
+    if(st->sortedId == 0)
+    {
+        sortBy(st->stations, st->dim, compareStationId);
+        /* El vector deja de estar ordenado por nombre si es que lo estaba */
+        st->sortedName = 0;
+        st->sortedId = 1;
+    }
+
     int startIdx, endIdx; /* Indices internos de viaje de ida y de vuelta */
 
     /* Chequeamos que las estaciones de inicio y fin existan */
@@ -236,9 +274,9 @@ static int compareStationNames(const void * s1, const void * s2)
     return strcmp(station1->name, station2->name);
 }
 
-static void sortByName(TStation vector[], size_t dim)
+static void sortBy(TStation vector[], size_t dim, TCompare f)
 {
-    qsort(vector, dim, sizeof(TStation), compareStationNames);
+    qsort(vector, dim, sizeof(TStation), f);
 }
 
 static query1List query1Add(query1List list, const char * name, size_t len, size_t startedTrips)
@@ -291,10 +329,12 @@ query1List query1(stationsADT st, int * flag)
 query2Elem * query2(stationsADT st, int * qty)
 {
     /* Si el vector no estaba ordenado por nombre lo ordenamos por comodidad */
-    if(st->sorted == 0)
+    if(st->sortedName == 0)
     {
-        sortByName(st->stations, st->dim);
-        st->sorted = 1;
+        sortBy(st->stations, st->dim, compareStationNames);
+        st->sortedName = 1;
+        /* Si ordenamos por nombre deja de estar ordenado por ID */
+        st->sortedId = 0;
     }
 
     /* La cantidad de elementos sera la misma que una matriz cuadrada pero sin la diagonal */
@@ -347,10 +387,12 @@ query2Elem * query2(stationsADT st, int * qty)
 query3Elem * query3(stationsADT st, int * qty)
 {
     /* Si el vector no estaba ordenado por nombre lo ordenamos por comodidad */
-    if(st->sorted == 0)
+    if(st->sortedName == 0)
     {
-        sortByName(st->stations, st->dim);
-        st->sorted = 1;
+        sortBy(st->stations, st->dim, compareStationNames);
+        st->sortedName = 1;
+        /* Si ordenamos por nombre deja de estar ordenado por ID */
+        st->sortedId = 0;
     }
 
     /* La cantidad de elementos sera la misma que la cantidad de estaciones */
