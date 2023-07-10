@@ -138,6 +138,7 @@ int addStation(stationsADT st, size_t id, const char * name)
 {
     /* Si se agregan estaciones nuevas se asume que el vector de estaciones quedo desordenado */
     st->sortedName = 0;
+    st->sortedId = 0;
     /* No queda espacio para agregar una estacion */
     if(st->dim == st->size)
     {
