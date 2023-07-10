@@ -127,7 +127,7 @@ static char * copyStr(const char * s, size_t * len)
     /* Se recorta el string para que solo ocupe lo necesario. */
     errno = 0;
     aux = realloc(ans, (i+1) * sizeof(char));
-    if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
+    if(checkMem(aux, "ERROR: Memory cant be allocated.\n"))
     {
         free(ans);
         return NULL;
