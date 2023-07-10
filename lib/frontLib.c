@@ -1,7 +1,7 @@
 /*
 **  Autores: smdevesa y jrambau
-**  Version: 1.0
-**  Fecha: 05/07/2023
+**  Version: 1.1
+**  Fecha: 10/07/2023
 **  
 **  Codigo fuente de la libreria de frontend para los programas de MON y NYC.
  */
@@ -30,7 +30,7 @@ static char * copyStr(const char * s);
 
 static void checkMem(void * ptr, const char * message)
 {
-    if(ptr == NULL)
+    if(ptr == NULL || errno == ENOMEM)
     {
         fprintf(stderr, "%s", message);
         exit(1);
@@ -51,12 +51,14 @@ static char * copyStr(const char * s)
     {
         if(i % BLOCK == 0)
         {
+            errno = 0;
             ans = realloc(ans, (BLOCK+i) * sizeof(char));
             checkMem((void *)ans, "ERROR: Memory cant be allocated.\n");
         }
         ans[i] = s[i];
     }
 
+    errno = 0;
     ans = realloc(ans, (i+1) * sizeof(char));
     checkMem((void *)ans, "ERROR: Memory cant be allocated.\n");
     ans[i] = 0;
@@ -65,6 +67,7 @@ static char * copyStr(const char * s)
 
 char ** getField(char * line, int fields)
 {
+    errno = 0;
     char ** ans = malloc(fields * sizeof(char *));
     checkMem((void *) ans, "ERROR: Memory cant be allocated.\n");
 
@@ -90,6 +93,7 @@ char * sizeToString(size_t num)
         digits++;
         aux /= 10;
     }
+    errno = 0;
     char * ans = malloc((digits + 1) * sizeof(char));
     checkMem((void *) ans, "ERROR: Memory cant be allocated.\n");
 
