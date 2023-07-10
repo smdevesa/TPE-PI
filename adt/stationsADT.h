@@ -52,7 +52,8 @@ typedef struct query3Elem
 stationsADT newStationsADT(void);
 
 /*
-** Agrega una nueva estacion (no repetida) al sistema.
+** Agrega una nueva estacion al sistema.
+** En caso de error de memoria libera el ADT de estaciones.
 **
 ** @returns 1 si se agrego con exito, 0 si estaba repetida
 **          -1 ante un error de memoria.
@@ -83,6 +84,7 @@ int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const ch
 ** @returns Una lista ordenada por cantidad de viajes de miembros
 **          y desempatada por nombre de estacion para cada una de
 **          las estaciones del ADT. Ver estructura query1List.
+**          En caso de error de memoria libera la lista y devuelve NULL.
 **
 ** @param flag Parametro de salida. Sera 1 si se completo correctamente
 **             la query, caso contrario sera -1.
