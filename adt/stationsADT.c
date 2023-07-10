@@ -86,9 +86,10 @@ static int compareStationId(const void * s1, const void * s2);
 /*
 ** Agrega un elemento a la lista de tipo query1 ordenando por startedTrips
 ** en forma decreciente y desempatando en orden alfabetico por name.
-** En caso de error de memoria devuelve NULL.
+** En caso de error de memoria coloca el flag en -1, en caso de exito
+** el flag sera 1.
  */
-static query1List query1Add(query1List list, const char * name, size_t len, size_t startedTrips);
+static query1List query1Add(query1List list, const char * name, size_t len, size_t startedTrips, int * flag);
 
 static int checkMem(void * ptr, const char * message)
 {
@@ -103,6 +104,7 @@ static int checkMem(void * ptr, const char * message)
 static char * copyStr(const char * s, size_t * len)
 {
     char * ans = NULL;
+    char * aux;
     int i;
 
     for(i=0; s[i] != 0; i++)
@@ -111,22 +113,26 @@ static char * copyStr(const char * s, size_t * len)
         if(i % COPY_BLOCK == 0)
         {
             errno = 0;
-            ans = realloc(ans, (COPY_BLOCK+i) * sizeof(char));
-            if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
+            aux = realloc(ans, (COPY_BLOCK+i) * sizeof(char));
+            if(checkMem(aux, "ERROR: Memory cant be allocated.\n"))
             {
+                free(ans);
                 return NULL;
             }
         }
+        ans = aux;
         ans[i] = s[i];
     }
 
     /* Se recorta el string para que solo ocupe lo necesario. */
     errno = 0;
-    ans = realloc(ans, (i+1) * sizeof(char));
+    aux = realloc(ans, (i+1) * sizeof(char));
     if(checkMem((void *)ans, "ERROR: Memory cant be allocated.\n"))
     {
+        free(ans);
         return NULL;
     }
+    ans = aux;
     ans[i] = 0;
     *len = i;
     return ans;
@@ -152,13 +158,16 @@ int addStation(stationsADT st, size_t id, const char * name)
     /* No queda espacio para agregar una estacion */
     if(st->dim == st->size)
     {
+        TStation * aux;
         /* Se debe agrandar tanto la matriz como el vector pues usan el mismo size */
         errno = 0;
-        st->stations = realloc(st->stations, (st->size + BIG_BLOCK) * sizeof(TStation));
-        if(checkMem(st->stations, "ERROR: Memory cant be allocated.\n"))
+        aux = realloc(st->stations, (st->size + BIG_BLOCK) * sizeof(TStation));
+        if(checkMem(aux, "ERROR: Memory cant be allocated.\n"))
         {
+            freeStations(st);
             return -1;
         }
+        st->stations = aux;
 
         /* Se crea una matriz que satisface el nuevo tamaño */
         errno = 0;
@@ -307,7 +316,7 @@ static void sortBy(TStation vector[], size_t dim, TCompare f)
     qsort(vector, dim, sizeof(TStation), f);
 }
 
-static query1List query1Add(query1List list, const char * name, size_t len, size_t startedTrips)
+static query1List query1Add(query1List list, const char * name, size_t len, size_t startedTrips, int * flag)
 {
     /* Si la lista esta vacia o el nodo debe ir antes del actual se crea */
     if(list == NULL || startedTrips > list->startedTrips || (list->startedTrips == startedTrips && strcmp(name, list->name) < 0))
@@ -316,6 +325,7 @@ static query1List query1Add(query1List list, const char * name, size_t len, size
         query1List newNode = malloc(sizeof(struct query1Node));
         if(checkMem(newNode, "ERROR: Memory cant be allocated.\n"))
         {
+            *flag = -1;
             return NULL;
         }
         newNode->startedTrips = startedTrips;
@@ -324,16 +334,18 @@ static query1List query1Add(query1List list, const char * name, size_t len, size
         newNode->name = malloc((len + 1) * sizeof(char));
         if(checkMem(newNode, "ERROR: Memory cant be allocated.\n"))
         {
+            *flag = -1;
             return NULL;
         }
         strcpy(newNode->name, name);
         
         /* Se conecta el nuevo nodo con el resto de la lista */
+        *flag = 1;
         newNode->tail = list;
         return newNode;
     }
     /* Se realiza el paso recursivo teniendo en cuenta que puede cambiar el primer elemento */
-    list->tail = query1Add(list->tail, name, len, startedTrips);
+    list->tail = query1Add(list->tail, name, len, startedTrips, flag);
     return list;
 }
 
@@ -344,12 +356,11 @@ query1List query1(stationsADT st, int * flag)
     /* Se recorre el vector de estaciones hasta el final y se agrega elemento a elemento a la lista */
     for(int i=0; i<st->dim; i++)
     {
-        ans = query1Add(ans, st->stations[i].name, st->stations[i].len, st->stations[i].memberTrips);
-        /* Error de memoria */
-        if(ans == NULL)
+        ans = query1Add(ans, st->stations[i].name, st->stations[i].len, st->stations[i].memberTrips, flag);
+        if(*flag == -1)
         {
-            *flag = -1;
-            return NULL;
+            freeQuery1(ans);
+            return ans;
         }
     }
 
@@ -372,6 +383,7 @@ query2Elem * query2(stationsADT st, int * qty)
     int size = 0; /* Indice para saber cuantos elementos hay reservados en el vector */
 
     query2Elem * ans = NULL;
+    query2Elem * aux;
     
     for(int i=0; i<st->dim; i++)
     {
@@ -385,12 +397,14 @@ query2Elem * query2(stationsADT st, int * qty)
                 if(k == size)
                 {
                     errno = 0;
-                    ans = realloc(ans, (size + QUERY2_BLOCK) * sizeof(query2Elem));
-                    if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
+                    aux = realloc(ans, (size + QUERY2_BLOCK) * sizeof(query2Elem));
+                    if(checkMem(aux, "ERROR: Memory cant be allocated.\n"))
                     {
                         *qty = -1;
+                        freeQuery2(ans, k);
                         return NULL;
                     }
+                    ans = aux;
                     size += QUERY2_BLOCK;
                 }
 
@@ -399,6 +413,7 @@ query2Elem * query2(stationsADT st, int * qty)
                 if(checkMem(ans[k].stationA, "ERROR: Memory cant be allocated.\n"))
                 {
                     *qty = -1;
+                    freeQuery2(ans, k);
                     return NULL;
                 }
                 strcpy(ans[k].stationA, st->stations[i].name);
@@ -408,6 +423,7 @@ query2Elem * query2(stationsADT st, int * qty)
                 if(checkMem(ans[k].stationB, "ERROR: Memory cant be allocated.\n"))
                 {
                     *qty = -1;
+                    freeQuery2(ans, k);
                     return NULL;
                 }
                 strcpy(ans[k].stationB, st->stations[j].name);
@@ -422,12 +438,14 @@ query2Elem * query2(stationsADT st, int * qty)
 
     /* Se recorta el vector para que solo ocupe lo necesario */
     errno = 0;
-    ans = realloc(ans, k * sizeof(query2Elem));
-    if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
+    aux = realloc(ans, k * sizeof(query2Elem));
+    if(checkMem(aux, "ERROR: Memory cant be allocated.\n"))
     {
         *qty = -1;
+        freeQuery2(ans, k);
         return NULL;
     }
+    ans = aux;
 
     *qty = k;
     return ans;
