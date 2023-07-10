@@ -13,7 +13,10 @@
 #include <errno.h>
 
 #define BIG_BLOCK 1000
+#define QUERY2_BLOCK 20000
 #define COPY_BLOCK 15
+
+#define MEM_ERR -2
 
 #define MONTHS_QTY 12
 
@@ -219,7 +222,12 @@ static int compareStationId(const void * s1, const void * s2)
 static int getIdx(TStation vector[], size_t dim, size_t id, size_t * pos)
 {
     /* Creamos una key auxiliar con el id que estamos buscando */
+    errno = 0;
     TStation * key = malloc(sizeof(TStation));
+    if(checkMem(key, "ERROR: Memory cant be allocated.\n"))
+    {
+        return MEM_ERR;
+    }
     key->id = id;
 
     /* Aprovechamos el orden del vector para aplicar busqueda binaria */
@@ -261,11 +269,19 @@ int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const ch
     {
         return 0;
     }
+    else if(startIdx == MEM_ERR)
+    {
+        return -1;
+    }
 
     endIdx = getIdx(st->stations, st->dim, endId, &endPos);
     if(endIdx == -1)
     {
         return 0;
+    }
+    else if(endIdx == MEM_ERR)
+    {
+        return -1;
     }
 
     st->matrix[startIdx][endIdx]++; /* Se agrega un viaje desde startIdx hasta endIdx */
@@ -345,24 +361,33 @@ query2Elem * query2(stationsADT st, int * qty)
         st->sortedId = 0;
     }
 
-    /* La cantidad de elementos sera la misma que una matriz cuadrada pero sin la diagonal */
-    size_t elems = (st->dim * st->dim) - st->dim;
     int k = 0; /* Indice para guardar los elementos en el vector */
+    int size = 0; /* Indice para saber cuantos elementos hay reservados en el vector */
 
-    errno = 0;
-    query2Elem * ans = malloc(elems * sizeof(query2Elem));
-    if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
-    {
-        *qty = -1;
-        return NULL;
-    }
-
+    query2Elem * ans = NULL;
+    
     for(int i=0; i<st->dim; i++)
     {
         for(int j=0; j<st->dim; j++)
         {
-            if(st->stations[i].id != st->stations[j].id) /* Descartamos viajes circulares */
+            /* Descartamos viajes circulares y elementos en los que no hay viajes */
+            if((st->stations[i].id != st->stations[j].id) && ((st->matrix[st->stations[i].index][st->stations[j].index] != 0)\
+            || (st->matrix[st->stations[j].index][st->stations[i].index] != 0)))
             {
+                /* No queda lugar en el vector */
+                if(k == size)
+                {
+                    errno = 0;
+
+                    ans = realloc(ans, (size + QUERY2_BLOCK) * sizeof(query2Elem));
+                    if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
+                    {
+                        *qty = -1;
+                        return NULL;
+                    }
+                    size += QUERY2_BLOCK;
+                }
+
                 errno = 0;
                 ans[k].stationA = malloc((st->stations[i].len + 1) * sizeof(char));
                 if(checkMem(ans[k].stationA, "ERROR: Memory cant be allocated.\n"))
@@ -386,6 +411,15 @@ query2Elem * query2(stationsADT st, int * qty)
                 k++;
             }
         }
+    }
+
+    /* Recortamos el vector para que solo ocupe lo necesario */
+    errno = 0;
+    ans = realloc(ans, k * sizeof(query2Elem));
+    if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
+    {
+        *qty = -1;
+        return NULL;
     }
 
     *qty = k;
