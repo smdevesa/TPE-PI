@@ -18,17 +18,16 @@
 
 #define MEM_ERR -2
 
-#define MONTHS_QTY 12
-
+#define DATE_MONTH_DISTANCE 5
 
 typedef struct station
 {
     char * name; /* Nombre de la estacion */
     size_t len; /* Longitud del string de nombre */
     size_t monthsVec[MONTHS_QTY]; /* Vector de viajes segun meses del año */
-    size_t id; /* */
-    size_t index; /* Indice interno de la matriz de adyacencia */
-    size_t memberTrips;
+    size_t id; /* ID de la estacion */
+    size_t index; /* Indice interno de la matriz de adyacencia (sigue el orden de insercion) */
+    size_t memberTrips; /* Cantidad de viajes iniciados por miembros en la estacion */
 } TStation;
 
 typedef struct stationsCDT
@@ -59,29 +58,35 @@ static int checkMem(void * ptr, const char * message);
 static char * copyStr(const char * s, size_t * len);
 
 /*
-** Devuelve el indice en el que esta situado el ID que recibe
-** si no lo encuentra devuelve -1.
+** @returns El index de la matriz de adyacencia asignado al ID
+**          que recibe como parametro. Retorna MEM_ERR si no se
+**          pudo asignar memoria.
+**
+** @param pos Argumento de salida en el que se guarda el indice del
+**            vector de estaciones en el que se encontro el ID buscado.       
  */
 static int getIdx(TStation vector[], size_t dim, size_t id, size_t * pos);
 
 /*
-** Devuelve la comparacion del nombre de dos estaciones.
-** Se adapta con punteros a void para utilizarla al hacer qsort.
+** Devuelve la comparacion del nombre de dos estaciones (de tipo strcmp).
  */
 static int compareStationNames(const void * s1, const void * s2);
 
 /*
-** Ordena el vector de estaciones alfabeticamente.
+** Ordena el vector de estaciones segun la funcion que reciba como
+** parametro.
  */
 static void sortBy(TStation vector[], size_t dim, TCompare f);
 
 /*
-**
+** Devuelve la resta de los IDs de dos estaciones a modo de comparacion.
  */
 static int compareStationId(const void * s1, const void * s2);
 
 /*
-**
+** Agrega un elemento a la lista de tipo query1 ordenando por startedTrips
+** en forma decreciente y desempatando en orden alfabetico por name.
+** En caso de error de memoria devuelve NULL.
  */
 static query1List query1Add(query1List list, const char * name, size_t len, size_t startedTrips);
 
@@ -102,6 +107,7 @@ static char * copyStr(const char * s, size_t * len)
 
     for(i=0; s[i] != 0; i++)
     {
+        /* No hay espacio suficiente para guardar el caracter */
         if(i % COPY_BLOCK == 0)
         {
             errno = 0;
@@ -128,6 +134,7 @@ static char * copyStr(const char * s, size_t * len)
 
 stationsADT newStationsADT(void)
 {
+    /* Se inicializa todo el ADT en cero y NULL para el vector y la matriz */
     stationsADT new  = calloc(1, sizeof(struct stationsCDT));
     errno = 0;
     if(checkMem(new, "ERROR: Memory cant be allocated.\n"))
@@ -145,7 +152,7 @@ int addStation(stationsADT st, size_t id, const char * name)
     /* No queda espacio para agregar una estacion */
     if(st->dim == st->size)
     {
-        /* Debo agrandar tanto la matriz como el vector pues usan el mismo size */
+        /* Se debe agrandar tanto la matriz como el vector pues usan el mismo size */
         errno = 0;
         st->stations = realloc(st->stations, (st->size + BIG_BLOCK) * sizeof(TStation));
         if(checkMem(st->stations, "ERROR: Memory cant be allocated.\n"))
@@ -153,7 +160,7 @@ int addStation(stationsADT st, size_t id, const char * name)
             return -1;
         }
 
-        /* Creamos una nueva matriz que satisfaga el nuevo tamaño */
+        /* Se crea una matriz que satisface el nuevo tamaño */
         errno = 0;
         size_t ** newMatrix = malloc((st->size + BIG_BLOCK) * sizeof(size_t *));
         if(checkMem(newMatrix, "ERROR: Memory cant be allocated.\n"))
@@ -161,6 +168,7 @@ int addStation(stationsADT st, size_t id, const char * name)
             return -1;
         }
 
+        /* Se inicializa la nueva matriz en cero */
         for(int i=0; i<(st->size + BIG_BLOCK); i++)
         {
             errno = 0;
@@ -171,30 +179,26 @@ int addStation(stationsADT st, size_t id, const char * name)
             }
         }
 
-        /* Copiamos los viejos elementos */
+        /* Se copian los viejos elementos */
         for(int i=0; i<st->size; i++)
         {
             memcpy(newMatrix[i], st->matrix[i], st->size * sizeof(size_t));
-        }
-
-        /* Liberamos la vieja matriz */
-        for(int i=0; i<st->size; i++)
-        {
             free(st->matrix[i]);
         }
+        /* Se libera la vieja matriz */
         free(st->matrix);
 
-        /* Apuntamos a la nueva matriz */
+        /* El ADT ahora apunta a la nueva matriz */
         st->matrix = newMatrix;
         st->size += BIG_BLOCK;
     }
 
-    /* Sabemos que hay espacio suficiente, agregamos la estacion */
+    /* Se sabe que hay espacio suficiente, se agrega la estacion */
     st->stations[st->dim].id = id;
-    st->stations[st->dim].index = st->dim; /* Asignamos como indice interno el lugar donde lo guardamos */
+    st->stations[st->dim].index = st->dim; /* El indice interno llevara el orden de insercion */
     st->stations[st->dim].memberTrips = 0;
     
-    /* Inicializamos su vector de meses */
+    /* Se inicializa su vector de meses */
     for(int i=0; i<MONTHS_QTY; i++)
     {
         st->stations[st->dim].monthsVec[i] = 0;
@@ -215,13 +219,13 @@ static int compareStationId(const void * s1, const void * s2)
     const TStation * station1 = (const TStation *)s1;
     const TStation * station2 = (const TStation *)s2;
 
-    /* Evitamos errores por el tipo de dato size_t */
+    /* Evito errores por el tipo de dato size_t */
     return (int)station1->id - (int)station2->id;
 }
 
 static int getIdx(TStation vector[], size_t dim, size_t id, size_t * pos)
 {
-    /* Creamos una key auxiliar con el id que estamos buscando */
+    /* Creo una key auxiliar con el id que estamos buscando */
     errno = 0;
     TStation * key = malloc(sizeof(TStation));
     if(checkMem(key, "ERROR: Memory cant be allocated.\n"))
@@ -230,10 +234,10 @@ static int getIdx(TStation vector[], size_t dim, size_t id, size_t * pos)
     }
     key->id = id;
 
-    /* Aprovechamos el orden del vector para aplicar busqueda binaria */
+    /* Aprovecho el orden del vector para aplicar busqueda binaria */
     TStation * ans = bsearch(key, vector, dim, sizeof(TStation), compareStationId);
 
-    /*Liberamos el espacio auxiliar */
+    /* Liberamos el espacio auxiliar */
     free(key);
 
     if(ans == NULL)
@@ -242,16 +246,16 @@ static int getIdx(TStation vector[], size_t dim, size_t id, size_t * pos)
     }
     else
     {
-        /* Guardamos en pos la posicion del vector en la que se encontro el ID buscado */
+        /* Se guarda en pos la posicion del vector en la que se encontro el ID buscado */
         *pos = ans - vector;
-        /* Devolvemos el indice del elemento en la matriz */
+        /* Se devuelve el indice del elemento en la matriz */
         return ans->index;
     }
 }
 
 int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const char * startDate)
 {
-    /* Si el vector no esta ordenado lo ordenamos por nombre */
+    /* Si el vector no esta ordenado por ID se ordena por ID */
     if(st->sortedId == 0)
     {
         sortBy(st->stations, st->dim, compareStationId);
@@ -260,10 +264,10 @@ int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const ch
         st->sortedId = 1;
     }
 
-    int startIdx, endIdx; /* Indices internos de viaje de ida y de vuelta */
-    size_t startPos, endPos; /* Posicion de las estaciones en el vector luego de reordenarlos por ID */
+    int startIdx, endIdx; /* Indices de la matriz de adyacencia asignados a su respectivo ID */
+    size_t startPos, endPos; /* Posicion de las estaciones en el vector de estaciones */
 
-    /* Chequeamos que las estaciones de inicio y fin existan */
+    /* Se chequea que las estaciones de inicio y fin existan */
     startIdx = getIdx(st->stations, st->dim, startId, &startPos);
     if(startIdx == -1)
     {
@@ -284,9 +288,9 @@ int addRide(stationsADT st, size_t startId, size_t endId, int isMember, const ch
         return -1;
     }
 
-    st->matrix[startIdx][endIdx]++; /* Se agrega un viaje desde startIdx hasta endIdx */
+    st->matrix[startIdx][endIdx]++; /* Se agrega un viaje desde la estacion de inicio hasta la estacion de fin  */
     st->stations[startPos].memberTrips += (isMember == 1);
-    st->stations[startPos].monthsVec[atoi(startDate + 5) - 1]++; /* Agregamos un viaje al mes correspondiente */
+    st->stations[startPos].monthsVec[atoi(startDate + DATE_MONTH_DISTANCE) - 1]++; /* Se agrega un viaje al mes correspondiente */
     return 1;
 }
 
@@ -305,6 +309,7 @@ static void sortBy(TStation vector[], size_t dim, TCompare f)
 
 static query1List query1Add(query1List list, const char * name, size_t len, size_t startedTrips)
 {
+    /* Si la lista esta vacia o el nodo debe ir antes del actual se crea */
     if(list == NULL || startedTrips > list->startedTrips || (list->startedTrips == startedTrips && strcmp(name, list->name) < 0))
     {
         errno = 0;
@@ -321,24 +326,26 @@ static query1List query1Add(query1List list, const char * name, size_t len, size
         {
             return NULL;
         }
-        
         strcpy(newNode->name, name);
         
+        /* Se conecta el nuevo nodo con el resto de la lista */
         newNode->tail = list;
         return newNode;
     }
+    /* Se realiza el paso recursivo teniendo en cuenta que puede cambiar el primer elemento */
     list->tail = query1Add(list->tail, name, len, startedTrips);
     return list;
 }
 
 query1List query1(stationsADT st, int * flag)
 {
-    /* Inicializamos la lista vacia para devolver */
     query1List ans = NULL;
 
+    /* Se recorre el vector de estaciones hasta el final y se agrega elemento a elemento a la lista */
     for(int i=0; i<st->dim; i++)
     {
         ans = query1Add(ans, st->stations[i].name, st->stations[i].len, st->stations[i].memberTrips);
+        /* Error de memoria */
         if(ans == NULL)
         {
             *flag = -1;
@@ -352,12 +359,12 @@ query1List query1(stationsADT st, int * flag)
 
 query2Elem * query2(stationsADT st, int * qty)
 {
-    /* Si el vector no estaba ordenado por nombre lo ordenamos por comodidad */
+    /* Si el vector no estaba ordenado por nombre se ordena por comodidad */
     if(st->sortedName == 0)
     {
         sortBy(st->stations, st->dim, compareStationNames);
         st->sortedName = 1;
-        /* Si ordenamos por nombre deja de estar ordenado por ID */
+        /* Si se ordena por nombre deja de estar ordenado por ID */
         st->sortedId = 0;
     }
 
@@ -370,7 +377,7 @@ query2Elem * query2(stationsADT st, int * qty)
     {
         for(int j=0; j<st->dim; j++)
         {
-            /* Descartamos viajes circulares y elementos en los que no hay viajes */
+            /* Se descartan viajes circulares y elementos en los que no hay viajes */
             if((st->stations[i].id != st->stations[j].id) && ((st->matrix[st->stations[i].index][st->stations[j].index] != 0)\
             || (st->matrix[st->stations[j].index][st->stations[i].index] != 0)))
             {
@@ -378,7 +385,6 @@ query2Elem * query2(stationsADT st, int * qty)
                 if(k == size)
                 {
                     errno = 0;
-
                     ans = realloc(ans, (size + QUERY2_BLOCK) * sizeof(query2Elem));
                     if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
                     {
@@ -406,6 +412,7 @@ query2Elem * query2(stationsADT st, int * qty)
                 }
                 strcpy(ans[k].stationB, st->stations[j].name);
 
+                /* La cantidad de viajes esta guardada en los indices asignados de la matriz */
                 ans[k].AtoB = st->matrix[st->stations[i].index][st->stations[j].index];
                 ans[k].BtoA = st->matrix[st->stations[j].index][st->stations[i].index];
                 k++;
@@ -413,7 +420,7 @@ query2Elem * query2(stationsADT st, int * qty)
         }
     }
 
-    /* Recortamos el vector para que solo ocupe lo necesario */
+    /* Se recorta el vector para que solo ocupe lo necesario */
     errno = 0;
     ans = realloc(ans, k * sizeof(query2Elem));
     if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
@@ -428,12 +435,12 @@ query2Elem * query2(stationsADT st, int * qty)
 
 query3Elem * query3(stationsADT st, int * qty)
 {
-    /* Si el vector no estaba ordenado por nombre lo ordenamos por comodidad */
+    /* Si el vector no estaba ordenado por nombre se ordena por comodidad */
     if(st->sortedName == 0)
     {
         sortBy(st->stations, st->dim, compareStationNames);
         st->sortedName = 1;
-        /* Si ordenamos por nombre deja de estar ordenado por ID */
+        /* Si se ordena por nombre deja de estar ordenado por ID */
         st->sortedId = 0;
     }
 
@@ -461,14 +468,7 @@ query3Elem * query3(stationsADT st, int * qty)
         }
         strcpy(ans[k].name, st->stations[i].name);
 
-        errno = 0;
-        ans[k].mv = malloc(MONTHS_QTY * sizeof(size_t));
-        if(checkMem(ans[k].mv, "ERROR: Memory cant be allocated.\n"))
-        {
-            *qty = -1;
-            return NULL;
-        }
-
+        /* Se copia el vector de meses */
         for(int j=0; j<MONTHS_QTY; j++)
         {
             ans[k].mv[j] = st->stations[i].monthsVec[j];
@@ -508,7 +508,6 @@ void freeQuery3(query3Elem * vec, size_t qty)
     for(int i=0; i<qty; i++)
     {
         free(vec[i].name);
-        free(vec[i].mv);
     }
     free(vec);
 }

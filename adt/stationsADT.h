@@ -9,6 +9,9 @@
 
 #include <stddef.h>
 
+/* Cantidad de meses del año para la Query 3 */
+#define MONTHS_QTY 12
+
 typedef struct stationsCDT * stationsADT;
 
 /* Estructura de los nodos de la lista utilizada para devolver los datos solicitados en la query 1 */
@@ -37,9 +40,9 @@ typedef struct query3Elem
     /*
     ** Vector con la cantidad de viajes segun el mes del año
     ** donde cada indice simboliza un mes siendo 0 ENERO, 1 FEBRERO
-    ** y asi sucesivamente hasta 11 DICIEMBRE. Su dimension es 12.
+    ** y asi sucesivamente hasta 11 DICIEMBRE.
      */
-    size_t * mv;
+    size_t mv[MONTHS_QTY];
 } query3Elem;
 
 /*
