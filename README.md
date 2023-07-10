@@ -19,7 +19,7 @@ a table with the next two fields:
 ####  - Query 2: Total trips between all stations.
 
 This query shows total non-circular (starting station is different to ending station)
-trips between all stations.
+trips between all stations except the cases when there are no trips between stations.
 The output is a .csv file and a .html file. Both have the information of the query in
 a table with the next four fields:
 
@@ -102,4 +102,36 @@ The stations.csv must have the following format:
 - latitude = latitude of the ubication of the station (double)
 - longitude = longitude of the ubication of the station (double)
 
-## 
+## Files
+
+#### stationsADT.h
+
+This ADT shows the functions used to create a stations of bicycles
+and add the rides from one station to another one.
+Also, it shows the struct and functions used for each of the queries created.
+
+#### stationsADT.c
+
+Shows the struct used for storing all the data recieved and how all the functions 
+from stationsADT.h work.
+
+#### frontLib.h
+
+This ADT shows frontend functions for bikeSharingMON.c and bikeSharingNYC.c.
+Also it includes all the #define for each one of the fields of the output files.
+
+#### frontLib.c
+
+Shows how all the functions from frontLib.h work
+
+#### bikeSharingMON.c
+
+This code creates the .csv and .html files for each query for 
+the city of Montreal, Canada.
+
+#### bikeSharingNYC.c
+
+This code creates the .csv and .html files for each query for 
+the city of New York, United States.
+
+##
