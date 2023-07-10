@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #define DELIM ";\n"
 #define MAXBUFFER 256
@@ -53,14 +54,14 @@ static char * copyStr(const char * s)
         {
             errno = 0;
             ans = realloc(ans, (BLOCK+i) * sizeof(char));
-            checkMem((void *)ans, "ERROR: Memory cant be allocated.\n");
+            checkMem((void *)ans, "ERROR: Memory cant be allocated. Aborting.\n");
         }
         ans[i] = s[i];
     }
 
     errno = 0;
     ans = realloc(ans, (i+1) * sizeof(char));
-    checkMem((void *)ans, "ERROR: Memory cant be allocated.\n");
+    checkMem((void *)ans, "ERROR: Memory cant be allocated. Aborting.\n");
     ans[i] = 0;
     return ans;
 }
@@ -69,7 +70,7 @@ char ** getField(char * line, int fields)
 {
     errno = 0;
     char ** ans = malloc(fields * sizeof(char *));
-    checkMem((void *) ans, "ERROR: Memory cant be allocated.\n");
+    checkMem((void *) ans, "ERROR: Memory cant be allocated. Aborting.\n");
 
     /* Separamos el string y copiamos el primer campo*/
     ans[0] = copyStr(strtok(line, DELIM));  
@@ -95,7 +96,7 @@ char * sizeToString(size_t num)
     }
     errno = 0;
     char * ans = malloc((digits + 1) * sizeof(char));
-    checkMem((void *) ans, "ERROR: Memory cant be allocated.\n");
+    checkMem((void *) ans, "ERROR: Memory cant be allocated. Aborting.\n");
 
     /* Cargamos los numeros en el string al reves de como se reciben */
     for(int i=(digits-1); i>=0; i--)
@@ -111,7 +112,7 @@ void checkFile(FILE * file)
 {
     if(file == NULL)
     {
-        fprintf(stderr,"ERROR: file cant be opened.\n");
+        fprintf(stderr,"ERROR: file cant be opened. Aborting.\n");
         exit(1);
     }
 }

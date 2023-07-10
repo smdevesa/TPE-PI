@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "../lib/frontLib.h"
 #include "../adt/stationsADT.h"
 #include "../lib/htmlTable.h"
@@ -22,7 +23,7 @@ int main(int argc, char ** argv)
     /* Se esperan dos documentos .csv */
     if(argc != ARGS_EXPECTED)
     {
-        fprintf(stderr, "ERROR: The amount of files recieved is invalid.\n");
+        fprintf(stderr, "ERROR: The amount of files recieved is invalid. Aborting.\n");
         exit(1);
     }
 
@@ -51,7 +52,7 @@ int main(int argc, char ** argv)
         flag = addStation(st, atoi(ans[3]), ans[0]);
         if(flag == -1)
         {
-            fprintf(stderr, "ERROR: Memory cant be allocated.\n");
+            fprintf(stderr, "ERROR: Memory cant be allocated. Aborting.\n");
             exit(1);
         }
         /* Liberamos el espacio reservado por auxiliares */
@@ -76,7 +77,7 @@ int main(int argc, char ** argv)
         flag = addRide(st, atoi(ans[1]), atoi(ans[3]), isMember, ans[0]);
         if(flag == -1)
         {
-            fprintf(stderr, "ERROR: Memory cant be allocated.\n");
+            fprintf(stderr, "ERROR: Memory cant be allocated. Aborting.\n");
             exit(1);
         }
         for(int i=0; i < BIKES_FIELDS; i++)
