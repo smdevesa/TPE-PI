@@ -104,34 +104,39 @@ The stations.csv must have the following format:
 
 ## Files
 
-#### stationsADT.h
+#### - stationsADT.h
 
 This ADT shows the functions used to create a stations of bicycles
 and add the rides from one station to another one.
 Also, it shows the struct and functions used for each of the queries created.
 
-#### stationsADT.c
+#### - stationsADT.c
 
 Shows the struct used for storing all the data recieved and how all the functions 
 from stationsADT.h work.
 
-#### frontLib.h
+#### - frontLib.h
 
 This ADT shows frontend functions for bikeSharingMON.c and bikeSharingNYC.c.
 Also it includes all the #define for each one of the fields of the output files.
 
-#### frontLib.c
+#### - frontLib.c
 
 Shows how all the functions from frontLib.h work
 
-#### bikeSharingMON.c
+#### - bikeSharingMON.c
 
 This code creates the .csv and .html files for each query for 
 the city of Montreal, Canada.
 
-#### bikeSharingNYC.c
+#### - bikeSharingNYC.c
 
 This code creates the .csv and .html files for each query for 
 the city of New York, United States.
+
+#### - Makefile
+
+This file explains how to generate each executable file and how to 
+execute it.
 
 ##
