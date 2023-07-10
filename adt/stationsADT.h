@@ -68,7 +68,7 @@ int addStation(stationsADT st, size_t id, const char * name);
 ** Agrega un nuevo recorrido al sistema.
 **
 ** @returns 1 si pudo agregar un nuevo recorrido, 0 si no 
-**          existe la estacion de inicio, -1 ante un error
+**          existe la estacion de inicio o final, -1 ante un error
 **          de memoria o de tipo de dato recibido.
 **
 ** @param st Sistema de estaciones sobre el que se quiere agregar.
