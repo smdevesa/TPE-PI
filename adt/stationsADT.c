@@ -360,7 +360,7 @@ query1List query1(stationsADT st, int * flag)
         if(*flag == -1)
         {
             freeQuery1(ans);
-            return ans;
+            return NULL;
         }
     }
 
