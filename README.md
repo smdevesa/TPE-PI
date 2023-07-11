@@ -1,12 +1,16 @@
-# TPE-PI
+# TPE-PI #
 a project by  *smdevesa* (Santiago Manuel Devesa) & *jrambau* (Junior Rambau).
 
-## Prerrequisites
+---
+
+## Prerrequisites ##
 
 Must install before using this program:
 
   1. Make
   2. GCC
+
+---
 
 ## Description
 
@@ -19,7 +23,7 @@ This query shows total trips started by members for every station sorted by
 amount of trips in descending order.
 The output is a .csv file and a .html file. Both have the information of the query in
 a table with the next two fields:
-
+  
   1. Station (station name)
   2. StartedTrips (amount of trips started by members in the station)
      
@@ -56,13 +60,15 @@ a table with the next thirteen fields:
   12. D (total trips started in December)
   13. Station (name of the station)
 
+---
+
 ## Installation and use
 
 #### - New York program:
 
 ##### - Compiling:
-  1. Use makefile:
-     `make nyc`
+1. Use makefile:
+   `make nyc`
 
 ##### - Executing:
 
@@ -130,58 +136,61 @@ The stations.csv must have the following format:
 If you want to use both programs you can compile them together with Makefile with:
 `make all`
 
+---
+
 ## Files and directories
 
-### /TPE-PI/
+### - /TPE-PI/
 
-#### - Makefile
+Main directory of the project.
 
-This file is used to generate executables for NYC and MON programs.
+  - Makefile:
+  This file is used to generate executables for NYC and MON programs.
 
-### /TPE-PI/adt/
+### - /TPE-PI/adt/
 
-#### - stationsADT.h
+Directory with the files of the ADTs used as backend.
 
-This ADT contract shows the functions used to create a stations of bicycles
-and add the rides from one station to another one.
-Also, it shows the struct and functions used for each of the queries created.
+  - stationsADT.h:
+  This ADT contract shows the functions used to create a stations of bicycles
+  and add the rides from one station to another one.
+  Also, it shows the struct and functions used for each of the queries created.
+  
+  - stationsADT.c:
+  Source code with structure of stationsADT, auxiliar and main functions.
 
-#### - stationsADT.c
+### - /TPE-PI/lib/
 
-Source code with structure of stationsADT, auxiliar and main functions.
+  Directory with libraries of frontend.
+  
+  - frontLib.h:
+  This header shows frontend functions for bikeSharingMON.c and bikeSharingNYC.c.
+  Also it includes all the constants for each one of the fields of the output files.
+  
+  - frontLib.c:
+  Source code of frontLib functions.
 
-### /TPE-PI/lib/
+  - htmlTable.h:
+  This header shows backend functions that create the .html output files
+  for queries.
+  
+  - htmlTable.c:
+  Source code for htmlTable library.
 
-#### - frontLib.h
+### - /TPE-PI/mon/
+  
+  Directory with Montreal program source code. This is where the executable will generate after compiling with Make.
 
-This header shows frontend functions for bikeSharingMON.c and bikeSharingNYC.c.
-Also it includes all the constants for each one of the fields of the output files.
+  - bikeSharingMON.c:
+  This code creates the .csv and .html files for each query for 
+  the city of Montreal, Canada.
 
-#### - frontLib.c
+### - /TPE-PI/nyc/
+  
+  Directory with Montreal program source code. This is where the executable will generate after compiling with Make.
 
-Source code of frontLib functions.
+  - bikeSharingNYC.c:
+  This code creates the .csv and .html files for each query for 
+  the city of New York, United States.
 
-#### - htmlTable.h
-
-This header shows backend functions that create the .html output files
-for queries.
-
-#### - htmlTable.c
-
-Source code for htmlTable library.
-
-### /TPE-PI/mon/
-
-#### - bikeSharingMON.c
-
-This code creates the .csv and .html files for each query for 
-the city of Montreal, Canada.
-
-### /TPE-PI/nyc/
-
-#### - bikeSharingNYC.c
-
-This code creates the .csv and .html files for each query for 
-the city of New York, United States.
-
-##
+---
