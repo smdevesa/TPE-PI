@@ -1,6 +1,13 @@
 # TPE-PI
 a project by  *smdevesa* (Santiago Manuel Devesa) & *jrambau* (Junior Rambau).
 
+## Prerrequisites
+
+Must install before using this program:
+
+  1. Make
+  2. GCC
+
 ## Description
 
 This program is designed for reading .csv files with data about bike sharing stations and the rides they host, then
@@ -53,11 +60,19 @@ a table with the next thirteen fields:
 
 #### - New York program:
 
-- Compiling:
-  `make nyc/bikeSharingNYC.out`
+##### - Compiling:
+  1. Use makefile:
+     `make nyc`
 
-- Executing:
-  `./nyc/bikeSharingNYC.out BIKESFILENAME.csv STATIONSFILENAME.csv`
+##### - Executing:
+
+1. Get into nyc directory:
+   `cd nyc`
+
+2. Execute:
+   `./nyc/bikeSharingNYC.out BIKESFILENAME.csv STATIONSFILENAME.csv`
+
+    Replace BIKESFILENAME.csv and STATIONSFILENAME.csv with the path of .csv files with the data.
 
 The bikes.csv must have the following format:
 `started_at;start_station_id;ended_at;end_station_id;rideable_type;member_casual`
@@ -79,11 +94,19 @@ The stations.csv must have the following format:
 
 #### - Montreal program:
 
-- Compiling:
-  `make mon/bikeSharingMON.out`
+##### - Compiling:
+  1. Use makefile:
+      `make mon`
 
-- Executing:
-  `./mon/bikeSharingMON.out BIKESFILENAME.csv STATIONSFILENAME.csv`
+##### - Executing:
+
+  1. Get into mon directory:
+     `cd mon`
+  
+  2. Execute:
+     `./nyc/bikeSharingMON.out BIKESFILENAME.csv STATIONSFILENAME.csv`
+
+  Replace BIKESFILENAME.csv and STATIONSFILENAME.csv with the path of .csv files with the data.
 
 The bikes.csv must have the following format:
 `start_date;emplacement_pk_start;end_date;emplacement_pk_end;is_member`
@@ -102,41 +125,63 @@ The stations.csv must have the following format:
 - latitude = latitude of the ubication of the station (double)
 - longitude = longitude of the ubication of the station (double)
 
-## Files
+#### - Observations:
+
+If you want to use both programs you can compile them together with Makefile with:
+`make all`
+
+## Files and directories
+
+### /TPE-PI/
+
+#### - Makefile
+
+This file is used to generate executables for NYC and MON programs.
+
+### /TPE-PI/adt/
 
 #### - stationsADT.h
 
-This ADT shows the functions used to create a stations of bicycles
+This ADT contract shows the functions used to create a stations of bicycles
 and add the rides from one station to another one.
 Also, it shows the struct and functions used for each of the queries created.
 
 #### - stationsADT.c
 
-Shows the struct used for storing all the data recieved and how all the functions 
-from stationsADT.h work.
+Source code with structure of stationsADT, auxiliar and main functions.
+
+### /TPE-PI/lib/
 
 #### - frontLib.h
 
-This ADT shows frontend functions for bikeSharingMON.c and bikeSharingNYC.c.
-Also it includes all the #define for each one of the fields of the output files.
+This header shows frontend functions for bikeSharingMON.c and bikeSharingNYC.c.
+Also it includes all the constants for each one of the fields of the output files.
 
 #### - frontLib.c
 
-Shows how all the functions from frontLib.h work
+Source code of frontLib functions.
+
+#### - htmlTable.h
+
+This header shows backend functions that create the .html output files
+for queries.
+
+#### - htmlTable.c
+
+Source code for htmlTable library.
+
+### /TPE-PI/mon/
 
 #### - bikeSharingMON.c
 
 This code creates the .csv and .html files for each query for 
 the city of Montreal, Canada.
 
+### /TPE-PI/nyc/
+
 #### - bikeSharingNYC.c
 
 This code creates the .csv and .html files for each query for 
 the city of New York, United States.
-
-#### - Makefile
-
-This file explains how to generate each executable file and how to 
-execute it.
 
 ##
