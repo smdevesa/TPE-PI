@@ -2,7 +2,7 @@ COMPILER=gcc
 MON_OUTPUT_FILE=mon/bikeSharingMON.out
 NYC_OUTPUT_FILE=nyc/bikeSharingNYC.out
 CFLAGS=-Wall -pedantic -std=c99 -fsanitize=address
-TRASHFILES=*.out *.o lib/*.o lib/*.out mon/*.out mon/*.o nyc/*.out nyc/*.o adt/*.o adt/*.out
+TRASHFILES=*.out *.o lib/*.o lib/*.out mon/*.out mon/*.o nyc/*.out nyc/*.o adt/*.o adt/*.out mon/query* nyc/query*
 
 all: mon nyc
 
