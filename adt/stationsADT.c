@@ -104,7 +104,6 @@ static int checkMem(void * ptr, const char * message)
 static char * copyStr(const char * s, size_t * len)
 {
     char * ans = NULL;
-    char * aux;
     int i;
 
     for(i=0; s[i] != 0; i++)
@@ -113,26 +112,22 @@ static char * copyStr(const char * s, size_t * len)
         if(i % COPY_BLOCK == 0)
         {
             errno = 0;
-            aux = realloc(ans, (COPY_BLOCK+i) * sizeof(char));
-            if(checkMem(aux, "ERROR: Memory cant be allocated.\n"))
+            ans = realloc(ans, (COPY_BLOCK+i) * sizeof(char));
+            if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
             {
-                free(ans);
                 return NULL;
             }
         }
-        ans = aux;
         ans[i] = s[i];
     }
 
     /* Se recorta el string para que solo ocupe lo necesario. */
     errno = 0;
-    aux = realloc(ans, (i+1) * sizeof(char));
-    if(checkMem(aux, "ERROR: Memory cant be allocated.\n"))
+    ans = realloc(ans, (i+1) * sizeof(char));
+    if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
     {
-        free(ans);
         return NULL;
     }
-    ans = aux;
     ans[i] = 0;
     *len = i;
     return ans;
@@ -158,16 +153,14 @@ int addStation(stationsADT st, size_t id, const char * name)
     /* No queda espacio para agregar una estacion */
     if(st->dim == st->size)
     {
-        TStation * aux;
         /* Se debe agrandar tanto la matriz como el vector pues usan el mismo size */
         errno = 0;
-        aux = realloc(st->stations, (st->size + BIG_BLOCK) * sizeof(TStation));
-        if(checkMem(aux, "ERROR: Memory cant be allocated.\n"))
+        st->stations = realloc(st->stations, (st->size + BIG_BLOCK) * sizeof(TStation));
+        if(checkMem(st->stations, "ERROR: Memory cant be allocated.\n"))
         {
             freeStations(st);
             return -1;
         }
-        st->stations = aux;
 
         /* Se crea una matriz que satisface el nuevo tamaño */
         errno = 0;
@@ -383,7 +376,6 @@ query2Elem * query2(stationsADT st, int * qty)
     int size = 0; /* Indice para saber cuantos elementos hay reservados en el vector */
 
     query2Elem * ans = NULL;
-    query2Elem * aux;
     
     for(int i=0; i<st->dim; i++)
     {
@@ -397,14 +389,12 @@ query2Elem * query2(stationsADT st, int * qty)
                 if(k == size)
                 {
                     errno = 0;
-                    aux = realloc(ans, (size + QUERY2_BLOCK) * sizeof(query2Elem));
-                    if(checkMem(aux, "ERROR: Memory cant be allocated.\n"))
+                    ans = realloc(ans, (size + QUERY2_BLOCK) * sizeof(query2Elem));
+                    if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
                     {
                         *qty = -1;
-                        freeQuery2(ans, k);
                         return NULL;
                     }
-                    ans = aux;
                     size += QUERY2_BLOCK;
                 }
 
@@ -438,14 +428,12 @@ query2Elem * query2(stationsADT st, int * qty)
 
     /* Se recorta el vector para que solo ocupe lo necesario */
     errno = 0;
-    aux = realloc(ans, k * sizeof(query2Elem));
-    if(checkMem(aux, "ERROR: Memory cant be allocated.\n"))
+    ans = realloc(ans, k * sizeof(query2Elem));
+    if(checkMem(ans, "ERROR: Memory cant be allocated.\n"))
     {
         *qty = -1;
-        freeQuery2(ans, k);
         return NULL;
     }
-    ans = aux;
 
     *qty = k;
     return ans;
@@ -482,6 +470,7 @@ query3Elem * query3(stationsADT st, int * qty)
         if(checkMem(ans[k].name, "ERROR: Memory cant be allocated.\n"))
         {
             *qty = -1;
+            freeQuery3(ans, k);
             return NULL;
         }
         strcpy(ans[k].name, st->stations[i].name);
