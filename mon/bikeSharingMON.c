@@ -27,14 +27,14 @@ int main(int argc, char ** argv)
         exit(1);
     }
 
-    /*Se abre cada archivo .csv en base al orden recibido*/
+    /* Se abre cada archivo .csv en base al orden recibido */
     FILE * FBikes = fopen(argv[1], "r"); 
     checkFile(FBikes);
 
     FILE * FStations = fopen(argv[2], "r");
     checkFile(FStations);
    
-    /*Se consume la primer linea de los documentos para no leer los nombres de los campos */
+    /* Se consume la primer linea de los documentos para no leer los nombres de los campos */
     char line[MAXBUFFER];
     fgets(line, MAXBUFFER, FBikes);
     fgets(line, MAXBUFFER, FStations);
@@ -68,7 +68,7 @@ int main(int argc, char ** argv)
     while(fgets(line,MAXBUFFER, FBikes) != NULL)
     {  
         ans = getField(line, BIKES_FIELDS);
-         /* Convertimos los strings necesarios en numeros */
+        /* Convertimos los strings necesarios en numeros */
         flag = addRide(st, atoi(ans[1]), atoi(ans[3]),atoi(ans[4]),ans[0]);
         if(flag == -1)
         {

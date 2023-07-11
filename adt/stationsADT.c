@@ -51,7 +51,7 @@ typedef int(*TCompare)(const void *, const void *);
 static int checkMem(void * ptr, const char * message);
 
 /*
-** Copia por bloques de tipo COPYBLOCK el string s y devuelve
+** Copia el string s y devuelve
 ** en su nombre el vector que contiene el string.
 ** En caso de error de memoria imprime error y devuelve NULL.
  */
@@ -158,7 +158,6 @@ int addStation(stationsADT st, size_t id, const char * name)
         st->stations = realloc(st->stations, (st->size + BIG_BLOCK) * sizeof(TStation));
         if(checkMem(st->stations, "ERROR: Memory cant be allocated.\n"))
         {
-            freeStations(st);
             return -1;
         }
 
@@ -403,7 +402,6 @@ query2Elem * query2(stationsADT st, int * qty)
                 if(checkMem(ans[k].stationA, "ERROR: Memory cant be allocated.\n"))
                 {
                     *qty = -1;
-                    freeQuery2(ans, k);
                     return NULL;
                 }
                 strcpy(ans[k].stationA, st->stations[i].name);
@@ -413,7 +411,6 @@ query2Elem * query2(stationsADT st, int * qty)
                 if(checkMem(ans[k].stationB, "ERROR: Memory cant be allocated.\n"))
                 {
                     *qty = -1;
-                    freeQuery2(ans, k);
                     return NULL;
                 }
                 strcpy(ans[k].stationB, st->stations[j].name);
@@ -470,7 +467,6 @@ query3Elem * query3(stationsADT st, int * qty)
         if(checkMem(ans[k].name, "ERROR: Memory cant be allocated.\n"))
         {
             *qty = -1;
-            freeQuery3(ans, k);
             return NULL;
         }
         strcpy(ans[k].name, st->stations[i].name);

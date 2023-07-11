@@ -53,7 +53,6 @@ stationsADT newStationsADT(void);
 
 /*
 ** Agrega una nueva estacion al sistema.
-** En caso de error de memoria libera el ADT de estaciones.
 **
 ** @returns 1 si se agrego con exito, 0 si estaba repetida
 **          -1 ante un error de memoria.

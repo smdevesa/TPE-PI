@@ -27,7 +27,7 @@ int main(int argc, char ** argv)
         exit(1);
     }
 
-    /*Se abre cada archivo .csv en base al orden recibido*/
+    /* Se abre cada archivo .csv en base al orden recibido */
     FILE * FBikes = fopen(argv[1], "r");
     checkFile(FBikes);
 
